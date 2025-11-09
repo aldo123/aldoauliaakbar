@@ -110,7 +110,7 @@ function ensureFilterLabelLeft(el) {
 // GANTT CHART MODULE LOADER
 // ===============================
 function loadGanttModule() {
-  fetch("modules/gantt/gantt.html")
+  fetch("gantt.html")
     .then(res => res.text())
     .then(html => {
       const mainContent = document.getElementById("main-content");
@@ -118,13 +118,13 @@ function loadGanttModule() {
 
       // Load script modul Gantt
       const script = document.createElement("script");
-      script.src = "modules/gantt/gantt.js";
+      script.src = "gantt.js";
       document.body.appendChild(script);
 
       // Load CSS khusus Gantt
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "modules/gantt/gantt.css";
+      link.href = "gantt.css";
       document.head.appendChild(link);
     })
     .catch(err => console.error("Failed to load Gantt module:", err));
@@ -1451,4 +1451,5 @@ window.renderOpenList = renderOpenList;
 window.renderConfigTable = renderConfigTable;
 window.openActivityModal = openActivityModal;
 window.renderActivityTableInTab = renderActivityTableInTab;
+
 
