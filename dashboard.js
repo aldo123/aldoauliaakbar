@@ -1452,4 +1452,3 @@ window.renderConfigTable = renderConfigTable;
 window.openActivityModal = openActivityModal;
 window.renderActivityTableInTab = renderActivityTableInTab;
 
-
