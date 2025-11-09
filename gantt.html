@@ -1,0 +1,33 @@
+<div id="gantt-wrapper" class="p-3">
+  <h4 class="mb-3 fw-bold">Project Gantt Chart — All Projects</h4>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div id="gantt-legend">
+      <span class="badge bg-success">Completed</span>
+      <span class="badge bg-warning text-dark">In Progress</span>
+      <span class="badge bg-danger">Delay</span>
+    </div>
+    <div>
+      <button id="zoomDay" class="btn btn-sm btn-outline-primary">Day</button>
+      <button id="zoomWeek" class="btn btn-sm btn-outline-primary">Week</button>
+      <button id="zoomMonth" class="btn btn-sm btn-outline-primary">Month</button>
+    </div>
+  </div>
+
+  <div class="table-responsive" id="gantt-table-container">
+    <table class="table table-bordered align-middle" id="ganttTable">
+      <thead class="table-success text-center">
+        <tr>
+          <th style="width: 240px;">Project</th>
+          <th style="width: 200px;">Activity</th>
+          <th style="width: 160px;">EE Responsible</th>
+          <th style="width: 130px;">Start Date</th>
+          <th style="width: 130px;">Finish Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="ganttChart" class="mt-3"></div>
+</div>
