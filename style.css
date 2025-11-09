@@ -1,0 +1,369 @@
+/* =========================================================
+   WIK - TPM Dashboard Style
+   Versi Final 2025 — Sidebar Visible + Scroll Stable Edition
+   ========================================================= */
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background-color: #f5f6f8;
+  color: #222;
+}
+
+/* =========================================================
+   WRAPPER & LAYOUT
+   ========================================================= */
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  overflow: visible; /* ✅ biarkan layout melebar alami */
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+.sidebar {
+  width: 260px;
+  background-color: #145a32;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.logo {
+  padding: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  text-transform: uppercase;
+}
+
+.logo span {
+  color: #00c896;
+}
+
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.menu li {
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s, padding-left 0.2s;
+}
+
+.menu li:hover {
+  background-color: #00c896;
+  padding-left: 28px;
+}
+
+.menu-group {
+  font-weight: 600;
+  padding: 10px 15px;
+}
+
+.menu-group ul {
+  list-style: none;
+  padding-left: 35px;
+  display: none;
+}
+
+.menu-group:hover ul {
+  display: block;
+}
+
+footer {
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #ccc;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================================
+   NAVBAR TOP
+   ========================================================= */
+.navbar-top {
+  background-color: white;
+  border-bottom: 1px solid #ddd;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.user-info {
+  font-weight: 500;
+  font-size: 14px;
+  color: #145a32;
+}
+
+/* =========================================================
+   CONTENT AREA
+   ========================================================= */
+.content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  min-height: 0;
+  overflow: visible; /* ✅ biar sidebar tetap tampil */
+}
+
+#main-scroll-area {
+  flex: 1;
+  overflow: hidden;
+  background: #fff;
+  padding: 15px 20px;
+}
+
+#main-content {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* =========================================================
+   TAB CONTAINER
+   ========================================================= */
+.tab-container {
+  background-color: #fff;
+  border-bottom: 2px solid #ddd;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.tab {
+  padding: 6px 12px;
+  border-radius: 6px 6px 0 0;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  background-color: #f8f9fa;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab.active {
+  background-color: #e8f5e9;
+  font-weight: 600;
+  color: #145a32;
+  border-color: #00c896;
+}
+
+.tab .close-tab {
+  font-size: 13px;
+  color: #888;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.tab .close-tab:hover {
+  color: red;
+}
+
+/* =========================================================
+   TABLES (Project List, Open List, Activity)
+   ========================================================= */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  font-size: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.table th {
+  background-color: #0b6623;
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 2px solid #145a32;
+}
+
+.table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 6px 4px;
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid #dcdcdc;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 200, 150, 0.08);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: #f9f9f9;
+}
+
+/* =========================================================
+   OPEN LIST TABLE
+   ========================================================= */
+#openListTable {
+  width: 100%;
+  min-width: 1200px;
+  table-layout: fixed;
+  margin-bottom: 50px;
+}
+
+#openListTable th,
+#openListTable td {
+  font-size: 13px;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   DATE INPUTS
+   ========================================================= */
+input[type="date"].form-control-sm,
+#projectTable td input[type="date"],
+#openListTable td input[type="date"],
+#activityTable td input[type="date"] {
+  width: 95px !important;
+  min-width: 85px;
+  max-width: 120px;
+  height: 28px;
+  text-align: center;
+  font-size: 13px;
+  padding: 2px 3px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: block;
+  margin: 0 auto;
+}
+
+.placeholder-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fdf8e3; /* krem lembut */
+  color: #444;
+  border-radius: 6px;
+  border: 1px solid #e0d8b9;
+  font-weight: 500;
+  width: 95px;
+  height: 30px;
+  margin: 0 auto;
+  font-size: 13px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   STATUS CELL COLORS
+   ========================================================= */
+.status-cell {
+  text-align: center;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.status-cell.bg-success { background-color: #198754 !important; color: white; }
+.status-cell.bg-warning { background-color: #fff3cd !important; color: #856404; }
+.status-cell.bg-danger { background-color: #f8d7da !important; color: #842029; }
+
+/* =========================================================
+   ACTIVITY TABLE
+   ========================================================= */
+#activityTable {
+  table-layout: fixed;
+  min-width: 1500px;
+  font-size: 13px;
+}
+
+#activityTable input,
+#activityTable select {
+  text-align: center;
+  font-size: 13px;
+  height: 30px;
+  padding: 2px 4px;
+}
+
+#activityTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: #0b6623 !important;
+  color: #fff;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* =========================================================
+   LOGIN PAGE
+   ========================================================= */
+.login-body {
+  background: linear-gradient(135deg, #0d6efd, #1e8449);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-container { width: 100%; max-width: 400px; padding: 20px; }
+
+.login-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.login-card h3 { font-weight: 600; color: #2c2f33; }
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 992px) {
+  .sidebar { width: 220px; }
+  .logo { font-size: 17px; }
+  table { font-size: 13px; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { width: 200px; }
+  table { font-size: 12px; }
+}
+

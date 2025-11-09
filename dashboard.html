@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WIK BT-TPM Dashboard</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css">
+  <script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.min.js"></script>
+
+  <style>
+    /* Perbaikan tampilan Activity table */
+    .modal-fullscreen .modal-body { overflow-x: auto; padding: 0.75rem 1rem; }
+    #activityTable { table-layout: fixed; width: 100%; min-width: 1500px; font-size:13px; }
+    #activityTable thead th { position: sticky; top:0; background:#0b6623; color:#fff; font-weight:600; padding:8px 6px; }
+    #activityTable td { padding:4px 6px; vertical-align:middle; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; height:44px; }
+    #activityTable th:nth-child(1), #activityTable td:nth-child(1) { width:44px; }
+    #activityTable th:nth-child(2), #activityTable td:nth-child(2) { width:220px; }
+    #activityTable th:nth-child(3), #activityTable td:nth-child(3) { width:90px; }
+    #activityTable th:nth-child(4), #activityTable td:nth-child(4) { width:120px; }
+    #activityTable th:nth-child(n+5):nth-child(-n+19),
+    #activityTable td:nth-child(n+5):nth-child(-n+19) { width:110px; min-width:100px; }
+    #activityTable th:nth-child(20), #activityTable td:nth-child(20) { width:90px; }
+    #activityTable th:nth-child(21), #activityTable td:nth-child(21) { width:140px; }
+    #activityTable th:nth-child(22), #activityTable td:nth-child(22) { width:110px; }
+    #activityTable input.form-control, #activityTable select.form-select { width:100%; height:34px; box-sizing:border-box; padding:4px 6px; font-size:13px; text-align:center; }
+    #activityTable .btn { padding:4px 6px; font-size:13px; }
+    .menu li { cursor:pointer; }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper d-flex flex-nowrap" style="height: 100vh; overflow: visible;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">WIK BT - <span>TPM</span></div>
+      <ul class="menu">
+        <li class="menu-group">
+          <i class="bi bi-speedometer2"></i> Data Dashboard
+          <ul>
+            <li data-page="project-state">Project State</li>
+            <li data-page="npi">NPI</li>
+          </ul>
+        </li>
+
+        <li class="menu-group">
+          <i class="bi bi-gear"></i> Engineering Management
+          <ul>
+            <li data-page="project-list">Project List</li>
+            <li data-page="file-list">File List</li>
+            <li data-page="open-list">Open List</li>
+            <li data-page="asset-list">Asset List</li>
+            <li data-page="asset-category">Asset Category</li>
+            <li data-page="device-state">Device State</li>
+          </ul>
+        </li>
+
+        <li class="menu-group">
+          <i class="bi bi-box-seam"></i> Parts & Device Management
+          <ul>
+            <li data-page="part-list">Part List</li>
+            <li data-page="inout">In/Out</li>
+            <li data-page="storage">Storage</li>
+            <li data-page="device-category">Device Category</li>
+            <li data-page="device-list">Device List</li>
+            <li data-page="maintenance-item">Maintenance Item</li>
+          </ul>
+        </li>
+
+        <li data-page="analytical-tools"><i class="bi bi-graph-up"></i> Analytical Tools</li>
+        <li data-page="system-config"><i class="bi bi-sliders"></i> System Configuration</li>
+      </ul>
+
+      <footer>Copyright Aldo Aulia Akbar © 2025</footer>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content flex-fill d-flex flex-column" style="overflow-y: auto; overflow-x: hidden;">
+      <div class="navbar-top d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+        <h5 id="page-title" class="m-0">Dashboard Overview</h5>
+        <div class="user-info">
+          <i class="bi bi-person-circle"></i> LiaoAlan
+        </div>
+      </div>
+
+      <!-- Dynamic Tabs -->
+      <div id="tabContainer" class="tab-container d-flex align-items-center border-bottom px-3" style="overflow-x:auto; white-space:nowrap;"></div>
+
+      <!-- Dynamic Content -->
+      <section id="main-scroll-area" class="flex-grow-1 d-flex flex-column" style="overflow-y:auto; overflow-x:hidden; background:#fff;">
+        <div id="main-content" class="main-content">
+          <div class="welcome-page text-center">
+            <h4>Welcome to WIK-TPM Dashboard</h4>
+            <p>Select a menu from the sidebar to view content.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Activity Modal -->
+  <div class="modal fade" id="activityModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="bi bi-list-task"></i> Activity Detail</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
+            <input type="text" id="searchActivity" class="form-control form-control-sm w-auto" placeholder="Search activity...">
+            <button id="addActivityBtn" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Add Task</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover table-striped align-middle" id="activityTable">
+              <thead class="table-dark">
+                <tr>
+                  <th>No</th><th>Activity</th><th>Site</th><th>Owner</th>
+                  <th>Requirement</th><th>Design</th><th>Quotation</th><th>IO</th><th>PR/PO</th>
+                  <th>3D Design</th><th>Fabrication</th><th>Assembly</th><th>ETA</th><th>Debugging</th><th>Aging Test</th>
+                  <th>Validation</th><th>Trial Run</th><th>Pilot Run</th><th>SOP</th><th>Level</th><th>Supplier</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Modal -->
+  <div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-gear"></i> Edit Configuration</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 id="configTitle" class="mb-3"></h6>
+          <ul id="configList" class="list-group mb-3"></ul>
+          <div class="input-group">
+            <input id="configInput" type="text" class="form-control" placeholder="Add new item...">
+            <button id="addConfigItem" class="btn btn-success"><i class="bi bi-plus-lg"></i> Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
