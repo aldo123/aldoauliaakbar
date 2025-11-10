@@ -71,8 +71,10 @@ const filterTitles = {
   openSearch: "Search"
 };
 
-function saveConfig() { localStorage.setItem("configData", JSON.stringify(configData)); }
-
+// function saveConfig() { localStorage.setItem("configData", JSON.stringify(configData)); }
+function saveConfig() {
+  saveConfigToFirebase(configData);
+}
 // Utility: escape HTML
 function escapeHtml(str) {
   if (str === undefined || str === null) return "";
@@ -673,7 +675,17 @@ function openActivityModal(pid) {
   if (!modalEl) return alert("Activity modal not found in HTML.");
   const modal = new bootstrap.Modal(modalEl);
   modalEl.setAttribute("data-pid", pid);
-  let data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+  // let data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+  let data = [];
+  loadActivitiesFromFirebase(pid).then(acts => {
+    data = acts || [];
+    render();
+  });
+
+  async function saveAct() {
+    await saveActivitiesToFirebase(pid, data);
+    console.log(`✅ Activity ${pid} saved to Firebase`);
+  }
   const tbody = modalEl.querySelector("#activityTable tbody");
 
   // prepare select options
@@ -918,7 +930,17 @@ function renderActivityTableInTab(pid) {
   if (!tb) return;
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
-  const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+  // const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+  let data = [];
+
+  loadActivitiesFromFirebase(pid).then(acts => {
+    data = acts || [];
+    populateActivityTab(data);
+  });
+
+  function populateActivityTab(data) {
+    // isi dengan sisa logika render tabel
+  }
 
   // option pools
   const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
@@ -971,9 +993,13 @@ function renderActivityTableInTab(pid) {
     b.onclick = (e) => {
       const idx = parseInt(b.dataset.i, 10);
       if (!confirm("Delete activity?")) return;
-      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-      acts.splice(idx, 1);
-      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+      // const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      // acts.splice(idx, 1);
+      // localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+      loadActivitiesFromFirebase(pid).then(acts => {
+        acts[idx] = Object.assign({}, acts[idx], obj);
+        saveActivitiesToFirebase(pid, acts);
+      });
       renderActivityTableInTab(pid);
     };
   });
