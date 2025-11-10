@@ -936,22 +936,9 @@ function markDelaysInActivityTable(containerEl = document) {
 // RENDER Activity in TAB (full page) — new feature
 // pageKey should be "activity-{pid}"
 // ===============================
-function renderActivityTableInTab(pid) {
-  const container = document.getElementById("main-content");
-  if (!container) return;
-  // render placeholder (already inserted by setActiveTab) - now populate tbody
-  const tbody = container.querySelector("#activityTableTab tbody");
-  if (!tbody) {
-    // If placeholder not present (older pages), inject full activity placeholder
-    container.innerHTML = pages["activity-tab-placeholder"];
-  }
-  // after ensuring placeholder, re-select
-  const tb = document.getElementById("activityTableTab");
-  if (!tb) return;
-  const tbodyFinal = tb.querySelector("tbody");
-  tbodyFinal.innerHTML = "";
-  // const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-  
+// ===============================
+// ✅ FINAL: RENDER Activity in TAB (full page) — fixed async version
+// ===============================
 async function renderActivityTableInTab(pid) {
   const container = document.getElementById("main-content");
   if (!container) return;
@@ -971,7 +958,7 @@ async function renderActivityTableInTab(pid) {
   const data = await loadActivitiesFromFirebase(pid);
   populateActivityTab(data || []);
 
-  // Fungsi ini render isi tabel
+  // Fungsi ini render isi tabel Activity
   function populateActivityTab(data) {
     const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
     const siteOpts = configData.site || [];
@@ -1017,7 +1004,73 @@ async function renderActivityTableInTab(pid) {
     markDelaysInActivityTable(document);
     showPlaceholderForEmptyDates("#activityTableTab tbody");
   }
+
+  // Handler untuk delete & edit
+  tb.querySelectorAll(".del-act-tab").forEach(b => {
+    b.onclick = async () => {
+      const idx = parseInt(b.dataset.i, 10);
+      if (!confirm("Delete activity?")) return;
+      const acts = await loadActivitiesFromFirebase(pid);
+      acts.splice(idx, 1);
+      await saveActivitiesToFirebase(pid, acts);
+      renderActivityTableInTab(pid);
+    };
+  });
+
+  tb.querySelectorAll(".edit-act-tab").forEach(b => {
+    b.onclick = async (e) => {
+      const btn = e.currentTarget;
+      const idx = parseInt(btn.dataset.i, 10);
+      const row = btn.closest("tr");
+      const inputs = row.querySelectorAll("input, select");
+      const toggled = btn.classList.toggle("editing");
+      if (toggled) {
+        inputs.forEach(x => x.disabled = false);
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+      } else {
+        const arr = Array.from(inputs);
+        let p = 0;
+        const obj = {};
+        obj.activity = arr[p++].value;
+        obj.site = arr[p++].value;
+        obj.owner = arr[p++].value;
+        activityDateFields.forEach(k => {
+          obj[`plan_${k}`] = arr[p++].value;
+          obj[`actual_${k}`] = arr[p++].value;
+        });
+        obj.level = arr[p++].value;
+        obj.supplier = arr[p++].value;
+
+        const acts = await loadActivitiesFromFirebase(pid);
+        acts[idx] = Object.assign({}, acts[idx], obj);
+        await saveActivitiesToFirebase(pid, acts);
+        renderActivityTableInTab(pid);
+      }
+    };
+  });
+
+  // 🟢 FIX: tombol Add Task Global
+  const addGlobal = document.getElementById("addActivityGlobal");
+  if (addGlobal) {
+    addGlobal.onclick = async () => {
+      const acts = await loadActivitiesFromFirebase(pid);
+      const updated = acts || [];
+      updated.push({
+        activity: "New Task",
+        site: configData.site[0] || "",
+        owner: configData.ee[0] || configData.tpm[0] || "",
+        supplier: configData.supplier[0] || "",
+        level: ""
+      });
+      await saveActivitiesToFirebase(pid, updated);
+      renderActivityTableInTab(pid);
+    };
+  }
+
+  markDelaysInActivityTable(document);
+  showPlaceholderForEmptyDates("#activityTableTab tbody");
 }
+
 
 
   // attach tab-level handlers (edit/delete/add/search)
