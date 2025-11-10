@@ -897,7 +897,7 @@ function markDelaysInActivityTable(containerEl = document) {
         isDelay = true;
       }
       // Kondisi 2: actual kosong dan plan sudah lewat hari ini
-      else if ((!actualVal || actualVal === "--") && planDate < today) {
+      else if (!actualDate && planDate < today) {
         color = "#f8d7da"; // merah muda (delay)
         isDelay = true;
       }
