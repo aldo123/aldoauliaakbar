@@ -376,14 +376,16 @@ onValue(ref(db, "projects/"), (snapshot) => {
 onValue(ref(db, "activities/"), (snapshot) => {
   if (!snapshot.exists()) return;
   console.log("🔁 Activities updated in real-time");
-
-  const activeTab = document.querySelector(".tab.active");
-  // Jika tab Activity sedang terbuka, otomatis refresh datanya
-  if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
-    const pid = activeTab.dataset.page.split("-")[1];
-    renderActivityTableInTab(pid);
-  }
+  clearTimeout(window._refreshDelayTimer);
+  window._refreshDelayTimer = setTimeout(() => {
+    const activeTab = document.querySelector(".tab.active");
+    if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
+      const pid = activeTab.dataset.page.split("-")[1];
+      renderActivityTableInTab(pid);
+    }
+  }, 400);
 });
+
 
 // ===============================
 // HELPERS: select HTML & date cell
@@ -853,121 +855,32 @@ function renderSelectHtml(name, options = [], selected = "") {
 
 // mark delayed inputs coloring in activity table (modal or tab)
 // - pass containerEl optional (modalEl or document)
-function markDelaysInActivityTable(containerEl = document) {
-  const root = (containerEl && containerEl.querySelector) ? containerEl : document;
-  const rows = root.querySelectorAll("#activityTable tbody tr, #activityTableTab tbody tr");
-
-  rows.forEach(row => {
-    activityDateFields.forEach(k => {
-      const planInput = row.querySelector(`[data-field="plan_${k}"]`);
-      const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
-      if (planInput && planInput.value === "--") {
-        planInput.type = "date";
-        planInput.value = "";
-      }
-      if (actualInput && actualInput.value === "--") {
-        actualInput.type = "date";
-        actualInput.value = "";
-      }
-
-      const planVal = planInput ? planInput.value : "";
-      const actualVal = actualInput ? actualInput.value : "";      
-      
-      // reset warna
-      [planInput, actualInput].forEach(inp => {
-        if (inp) {
-          inp.style.backgroundColor = "";
-          inp.classList.remove("border-danger");
-        }
-      });
-
-      // skip jika tidak ada plan
-      if (!planVal) return;
-
-      const planDate = toDateOnly(planVal);
-      const actualDate = actualVal ? toDateOnly(actualVal) : null;
-      const today = toDateOnly(new Date());
-
-      let color = ""; // default
-      let isDelay = false;
-
-      // Kondisi 1: actual melebihi plan
-      if (actualDate && actualDate > planDate) {
-        color = "#f8d7da"; // merah muda (delay)
-        isDelay = true;
-      }
-      // Kondisi 2: actual kosong dan plan sudah lewat hari ini
-      else if (!actualDate && planDate < today) {
-        color = "#f8d7da"; // merah muda (delay)
-        isDelay = true;
-      }
-      // Kondisi 3: actual kosong tapi belum lewat plan (On Progress)
-      else if (!actualDate && planDate >= today) {
-        color = "#fff3cd"; // kuning muda
-      }
-      // Kondisi 4: actual ada dan ≤ plan (Completed)
-      else if (actualDate && actualDate <= planDate) {
-        color = "#d1e7dd"; // hijau muda
-      }
-
-      // apply warna
-      [planInput, actualInput].forEach(inp => {
-        if (inp && color) inp.style.backgroundColor = color;
-      });
-
-      // tandai border merah kalau delay
-      if (isDelay && planInput) planInput.classList.add("border-danger");
-      if (isDelay && actualInput && !actualVal) actualInput.classList.add("border-danger");
-    });
-
-    // Cek apakah semua actual sudah terisi dan tidak ada delay → hijau semua kolom
-    let allActual = true, anyDelay = false;
-    activityDateFields.forEach(k => {
-      const p = row.querySelector(`[data-field="plan_${k}"]`);
-      const a = row.querySelector(`[data-field="actual_${k}"]`);
-      const pv = p ? p.value : "";
-      const av = a ? a.value : "";
-      if (!av) allActual = false;
-      const delay = computePhaseDelay(pv, av);
-      if (delay !== null && delay > 0) anyDelay = true;
-    });
-    if (allActual && !anyDelay) {
-      activityDateFields.forEach(k => {
-        const p = row.querySelector(`[data-field="plan_${k}"]`);
-        const a = row.querySelector(`[data-field="actual_${k}"]`);
-        [p, a].forEach(inp => {
-          if (inp) inp.style.backgroundColor = "#d1e7dd"; // hijau muda
-        });
-      });
-    }
-  });
-}
-
 // ===============================
-// ✅ FINAL: RENDER Activity in TAB (full page) — fixed async version
+// ✅ FINAL: RENDER Activity in TAB (Full Stable Edition)
 // ===============================
 async function renderActivityTableInTab(pid) {
   const container = document.getElementById("main-content");
   if (!container) return;
-  
+
   // Pastikan tabel ada
-  const tbody = container.querySelector("#activityTableTab tbody");
-  if (!tbody) {
+  if (!container.querySelector("#activityTableTab")) {
     container.innerHTML = pages["activity-tab-placeholder"];
   }
-  
+
   const tb = document.getElementById("activityTableTab");
   if (!tb) return;
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
 
-  // 🔥 Tunggu data selesai diambil dari Firebase dulu
+  // 🔥 Ambil data terbaru dari Firebase
   const data = await loadActivitiesFromFirebase(pid);
   populateActivityTab(Array.isArray(data) ? data : []);
 
-  // Fungsi ini render isi tabel Activity
+  // ===============================
+  // 🧩 Render isi tabel Activity
+  // ===============================
   function populateActivityTab(data) {
-    const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
+    const ownerOpts = Array.from(new Set([...(configData.ee || []), ...(configData.tpm || [])]));
     const siteOpts = configData.site || [];
     const supplierOpts = configData.supplier || [];
 
@@ -979,6 +892,8 @@ async function renderActivityTableInTab(pid) {
       a.owner = a.owner || ownerOpts[0] || "";
       a.level = a.level || "";
       a.supplier = a.supplier || supplierOpts[0] || "";
+
+      // Pastikan semua field plan dan actual ada
       activityDateFields.forEach(k => {
         if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
         if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
@@ -987,8 +902,9 @@ async function renderActivityTableInTab(pid) {
       const tr = document.createElement("tr");
       tr.dataset.pid = pid;
       tr.dataset.i = i;
+
       tr.innerHTML = `
-        <td class="text-center">${i+1}</td>
+        <td class="text-center">${i + 1}</td>
         <td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>
         <td>${renderSelectHtml("site", siteOpts, a.site)}</td>
         <td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>
@@ -1007,10 +923,11 @@ async function renderActivityTableInTab(pid) {
         </td>`;
       tbodyFinal.appendChild(tr);
     });
-
   }
 
-  // Handler untuk delete & edit
+  // ===============================
+  // 🧩 Handler Delete & Edit
+  // ===============================
   tb.querySelectorAll(".del-act-tab").forEach(b => {
     b.onclick = async () => {
       const idx = parseInt(b.dataset.i, 10);
@@ -1029,6 +946,7 @@ async function renderActivityTableInTab(pid) {
       const row = btn.closest("tr");
       const inputs = row.querySelectorAll("input, select");
       const toggled = btn.classList.toggle("editing");
+
       if (toggled) {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
@@ -1054,42 +972,47 @@ async function renderActivityTableInTab(pid) {
     };
   });
 
-
+  // ===============================
+  // 🧩 Add Task Global Button
+  // ===============================
   setTimeout(() => {
-  const addGlobal = document.getElementById("addActivityGlobal");
-  if (!addGlobal) {
-    console.warn("⚠️ Add Task button not found yet — retry next render");
-    return;
-  }
+    const addGlobal = document.getElementById("addActivityGlobal");
+    if (!addGlobal) {
+      console.warn("⚠️ Add Task button not found yet — retry next render");
+      return;
+    }
 
-  addGlobal.onclick = async () => {
-    console.log("✅ Add Task clicked for pid:", pid);
-    const acts = await loadActivitiesFromFirebase(pid);
-    const updated = Array.isArray(acts) ? acts : [];
-    updated.push({
-      activity: "New Task",
-      site: configData.site[0] || "",
-      owner: configData.ee[0] || configData.tpm[0] || "",
-      supplier: configData.supplier[0] || "",
-      level: ""
-    });
-    await saveActivitiesToFirebase(pid, updated);
-    console.log("✅ Task added successfully, total:", updated.length);
-    renderActivityTableInTab(pid);
-  };
+    addGlobal.onclick = async () => {
+      console.log("✅ Add Task clicked for pid:", pid);
+      const acts = await loadActivitiesFromFirebase(pid);
+      const updated = Array.isArray(acts) ? acts : [];
+      updated.push({
+        activity: "New Task",
+        site: configData.site[0] || "",
+        owner: configData.ee[0] || configData.tpm[0] || "",
+        supplier: configData.supplier[0] || "",
+        level: ""
+      });
+      await saveActivitiesToFirebase(pid, updated);
+      console.log("✅ Task added successfully, total:", updated.length);
+      renderActivityTableInTab(pid);
+    };
 
-  // tampilkan status dan placeholder tanggal setelah render
-  setTimeout(() => {
-    // Warna delay dulu
-    markDelaysInActivityTable(document);
-
-    // Baru tampilkan placeholder "--" (tidak akan menimpa warna lagi)
+    // ===============================
+    // 🧩 Render warna Delay & Placeholder
+    // ===============================
     setTimeout(() => {
-      showPlaceholderForEmptyDates("#activityTableTab tbody");
+      // 1️⃣ Warnai Delay dulu
+      markDelaysInActivityTable(document);
+
+      // 2️⃣ Baru tampilkan placeholder "--"
+      setTimeout(() => {
+        showPlaceholderForEmptyDates("#activityTableTab tbody");
+      }, 300);
     }, 300);
-  }, 300);
-});
+  }, 400);
 }
+
 
 
 // ===============================
