@@ -325,9 +325,8 @@ function setActiveTab(pageKey) {
   } else if (pageKey === "system-config") {
     renderConfigTable();
   } else if (pageKey.startsWith("activity-")) {
-    // activity tab render
     const pid = parseInt(pageKey.split("-")[1], 10);
-    renderActivityTableInTab(pid);
+  renderActivityTableInTab(pid);
   }
 }
 
@@ -558,6 +557,7 @@ function renderProjectTable(filtered = null) {
       // open Activity as TAB (page key: activity-{pid})
       const pageKey = `activity-${i}`;
       openTab(pageKey, `Activity — ${p.title || 'Project'}`);
+      console.log("🧩 Open Activity Tab for project:", i, p.title);
     };
     tr.querySelector(".edit-btn").onclick = () => toggleEditProjectRow(tr, i);
     tr.querySelector(".del-btn").onclick = () => {
