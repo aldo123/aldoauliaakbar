@@ -611,6 +611,7 @@ function wrapTd(inner) { return `<td>${inner}</td>`; }
 // ============================================
 // 🔧 Utility: tampilkan '--' untuk tanggal kosong
 // ============================================
+
 function showPlaceholderForEmptyDates(containerSelector = "body") {
   document.querySelectorAll(`${containerSelector} input[type="date"]`).forEach(input => {
     if (!input.value) {
@@ -631,6 +632,8 @@ function showPlaceholderForEmptyDates(containerSelector = "body") {
     }
   });
 }
+
+
 
 // ===============================
 // toggle edit row
@@ -858,9 +861,18 @@ function markDelaysInActivityTable(containerEl = document) {
     activityDateFields.forEach(k => {
       const planInput = row.querySelector(`[data-field="plan_${k}"]`);
       const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
-      const planVal = planInput ? planInput.value : "";
-      const actualVal = actualInput ? actualInput.value : "";
+      if (planInput && planInput.value === "--") {
+        planInput.type = "date";
+        planInput.value = "";
+      }
+      if (actualInput && actualInput.value === "--") {
+        actualInput.type = "date";
+        actualInput.value = "";
+      }
 
+      const planVal = planInput ? planInput.value : "";
+      const actualVal = actualInput ? actualInput.value : "";      
+      
       // reset warna
       [planInput, actualInput].forEach(inp => {
         if (inp) {
@@ -885,7 +897,7 @@ function markDelaysInActivityTable(containerEl = document) {
         isDelay = true;
       }
       // Kondisi 2: actual kosong dan plan sudah lewat hari ini
-      else if (!actualDate && planDate < today) {
+      else if ((!actualVal || actualVal === "--") && planDate < today) {
         color = "#f8d7da"; // merah muda (delay)
         isDelay = true;
       }
@@ -931,10 +943,6 @@ function markDelaysInActivityTable(containerEl = document) {
   });
 }
 
-// ===============================
-// RENDER Activity in TAB (full page) — new feature
-// pageKey should be "activity-{pid}"
-// ===============================
 // ===============================
 // ✅ FINAL: RENDER Activity in TAB (full page) — fixed async version
 // ===============================
@@ -1000,8 +1008,6 @@ async function renderActivityTableInTab(pid) {
       tbodyFinal.appendChild(tr);
     });
 
-    markDelaysInActivityTable(document);
-    showPlaceholderForEmptyDates("#activityTableTab tbody");
   }
 
   // Handler untuk delete & edit
@@ -1073,10 +1079,18 @@ async function renderActivityTableInTab(pid) {
   };
 
   // tampilkan status dan placeholder tanggal setelah render
-  markDelaysInActivityTable(document);
-  showPlaceholderForEmptyDates("#activityTableTab tbody");
-}, 300);
+  setTimeout(() => {
+    // Warna delay dulu
+    markDelaysInActivityTable(document);
+
+    // Baru tampilkan placeholder "--" (tidak akan menimpa warna lagi)
+    setTimeout(() => {
+      showPlaceholderForEmptyDates("#activityTableTab tbody");
+    }, 300);
+  }, 300);
+});
 }
+
 
 // ===============================
 // OPEN LIST: breakdown per-phase
