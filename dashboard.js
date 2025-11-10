@@ -1000,32 +1000,8 @@ async function renderActivityTableInTab(pid) {
       tbodyFinal.appendChild(tr);
     });
 
-    // ✅ FIX: pasang listener Add Task setelah DOM benar-benar muncul
-    setTimeout(() => {
-      const addGlobal = document.getElementById("addActivityGlobal");
-      if (addGlobal) {
-        addGlobal.onclick = async () => {
-          console.log("✅ Add Task clicked for pid:", pid);
-          const acts = await loadActivitiesFromFirebase(pid);
-          const updated = Array.isArray(acts) ? acts : [];
-          updated.push({
-            activity: "New Task",
-            site: configData.site[0] || "",
-            owner: configData.ee[0] || configData.tpm[0] || "",
-            supplier: configData.supplier[0] || "",
-            level: ""
-          });
-          await saveActivitiesToFirebase(pid, updated);
-          console.log("✅ Task added successfully, total:", updated.length);
-          renderActivityTableInTab(pid);
-        };
-      } else {
-        console.warn("⚠️ Add Task button not found yet, will retry next render...");
-      }
-
-      markDelaysInActivityTable(document);
-      showPlaceholderForEmptyDates("#activityTableTab tbody");
-    }, 100); // Delay 100ms agar DOM sempat dirender
+    markDelaysInActivityTable(document);
+    showPlaceholderForEmptyDates("#activityTableTab tbody");
   }
 
   // Handler untuk delete & edit
@@ -1072,49 +1048,34 @@ async function renderActivityTableInTab(pid) {
     };
   });
 
-  // 🟢 FIX: tombol Add Task Global
-  const addGlobal = document.getElementById("addActivityGlobal");
-  if (addGlobal) {
-    addGlobal.onclick = async () => {
-      const acts = await loadActivitiesFromFirebase(pid);
-      const updated = Array.isArray(acts) ? acts : [];
-      updated.push({
-        activity: "New Task",
-        site: configData.site[0] || "",
-        owner: configData.ee[0] || configData.tpm[0] || "",
-        supplier: configData.supplier[0] || "",
-        level: ""
-      });
-      await saveActivitiesToFirebase(pid, updated);
-      renderActivityTableInTab(pid);
-    };
-  }
 
   setTimeout(() => {
   const addGlobal = document.getElementById("addActivityGlobal");
-  if (addGlobal) {
-    addGlobal.onclick = async () => {
-      console.log("✅ Add Task clicked for pid:", pid);
-      const acts = await loadActivitiesFromFirebase(pid);
-      const updated = Array.isArray(acts) ? acts : [];
-      updated.push({
-        activity: "New Task",
-        site: configData.site[0] || "",
-        owner: configData.ee[0] || configData.tpm[0] || "",
-        supplier: configData.supplier[0] || "",
-        level: ""
-      });
-      await saveActivitiesToFirebase(pid, updated);
-      console.log("✅ Task added successfully, total:", updated.length);
-      renderActivityTableInTab(pid);
-    };
-  } else {
-    console.warn("⚠️ Add Task button not found yet, will retry next render...");
+  if (!addGlobal) {
+    console.warn("⚠️ Add Task button not found yet — retry next render");
+    return;
   }
 
+  addGlobal.onclick = async () => {
+    console.log("✅ Add Task clicked for pid:", pid);
+    const acts = await loadActivitiesFromFirebase(pid);
+    const updated = Array.isArray(acts) ? acts : [];
+    updated.push({
+      activity: "New Task",
+      site: configData.site[0] || "",
+      owner: configData.ee[0] || configData.tpm[0] || "",
+      supplier: configData.supplier[0] || "",
+      level: ""
+    });
+    await saveActivitiesToFirebase(pid, updated);
+    console.log("✅ Task added successfully, total:", updated.length);
+    renderActivityTableInTab(pid);
+  };
+
+  // tampilkan status dan placeholder tanggal setelah render
   markDelaysInActivityTable(document);
   showPlaceholderForEmptyDates("#activityTableTab tbody");
-}, 100); // Delay 100ms agar DOM sempat dirender
+}, 300);
 }
 
 // ===============================
