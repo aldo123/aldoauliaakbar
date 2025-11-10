@@ -375,6 +375,18 @@ onValue(ref(db, "projects/"), (snapshot) => {
   }
 });
 
+onValue(ref(db, "activities/"), (snapshot) => {
+  if (!snapshot.exists()) return;
+  console.log("🔁 Activities updated in real-time");
+
+  const activeTab = document.querySelector(".tab.active");
+  // Jika tab Activity sedang terbuka, otomatis refresh datanya
+  if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
+    const pid = activeTab.dataset.page.split("-")[1];
+    renderActivityTableInTab(pid);
+  }
+});
+
 // ===============================
 // HELPERS: select HTML & date cell
 // ===============================
@@ -756,14 +768,15 @@ function openActivityModal(pid) {
   }
 
   // click handlers inside modal tbody
-  tbody.onclick = (e) => {
+  tbody.onclick = async (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const i = parseInt(btn.dataset.i, 10);
     if (btn.classList.contains("del-act")) {
       if (!confirm("Delete activity?")) return;
       data.splice(i, 1);
-      saveAct(); render();
+      saveActToFirebase();
+      render();
       return;
     }
     if (btn.classList.contains("edit-act")) {
@@ -815,8 +828,15 @@ function openActivityModal(pid) {
     });
   };
 
-  function saveAct() { localStorage.setItem(`act_${pid}`, JSON.stringify(data)); }
-
+  //function saveAct() { localStorage.setItem(`act_${pid}`, JSON.stringify(data)); }
+  async function saveActToFirebase() {
+    try {
+      await saveActivitiesToFirebase(pid, data);
+      console.log(`✅ Activity ${pid} saved to Firebase`);
+    } catch (err) {
+      console.error("❌ Failed saving activities:", err);
+    }
+  }
   render();
   showPlaceholderForEmptyDates("#activityTable tbody");
   modal.show();
@@ -931,62 +951,74 @@ function renderActivityTableInTab(pid) {
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
   // const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-  let data = [];
-
-  loadActivitiesFromFirebase(pid).then(acts => {
-    data = acts || [];
-    populateActivityTab(data);
-  });
-
-  function populateActivityTab(data) {
-    // isi dengan sisa logika render tabel
+  
+async function renderActivityTableInTab(pid) {
+  const container = document.getElementById("main-content");
+  if (!container) return;
+  
+  // Pastikan tabel ada
+  const tbody = container.querySelector("#activityTableTab tbody");
+  if (!tbody) {
+    container.innerHTML = pages["activity-tab-placeholder"];
   }
+  
+  const tb = document.getElementById("activityTableTab");
+  if (!tb) return;
+  const tbodyFinal = tb.querySelector("tbody");
+  tbodyFinal.innerHTML = "";
 
-  // option pools
-  const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
-  const siteOpts = configData.site || [];
-  const supplierOpts = configData.supplier || [];
+  // 🔥 Tunggu data selesai diambil dari Firebase dulu
+  const data = await loadActivitiesFromFirebase(pid);
+  populateActivityTab(data || []);
 
-  data.forEach((a, i) => {
-    a.activity = a.activity || "";
-    a.site = a.site || siteOpts[0] || "";
-    a.owner = a.owner || ownerOpts[0] || "";
-    a.level = a.level || "";
-    a.supplier = a.supplier || supplierOpts[0] || "";
-    activityDateFields.forEach(k => {
-      if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
-      if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
+  // Fungsi ini render isi tabel
+  function populateActivityTab(data) {
+    const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
+    const siteOpts = configData.site || [];
+    const supplierOpts = configData.supplier || [];
+
+    tbodyFinal.innerHTML = "";
+
+    data.forEach((a, i) => {
+      a.activity = a.activity || "";
+      a.site = a.site || siteOpts[0] || "";
+      a.owner = a.owner || ownerOpts[0] || "";
+      a.level = a.level || "";
+      a.supplier = a.supplier || supplierOpts[0] || "";
+      activityDateFields.forEach(k => {
+        if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
+        if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
+      });
+
+      const tr = document.createElement("tr");
+      tr.dataset.pid = pid;
+      tr.dataset.i = i;
+      tr.innerHTML = `
+        <td class="text-center">${i+1}</td>
+        <td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>
+        <td>${renderSelectHtml("site", siteOpts, a.site)}</td>
+        <td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>
+        ${activityDateFields.map(k => `
+          <td>
+            <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${a[`plan_${k}`]}" disabled>
+            <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${a[`actual_${k}`]}" disabled>
+          </td>`).join("")}
+        <td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>
+        <td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>`;
+      tbodyFinal.appendChild(tr);
     });
 
-    // build row
-    const cells = [];
-    cells.push(`<td class="text-center">${i+1}</td>`);
-    cells.push(`<td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>`);
-    cells.push(`<td>${renderSelectHtml("site", siteOpts, a.site)}</td>`);
-    cells.push(`<td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>`);
-    activityDateFields.forEach(k => {
-      const plan = a[`plan_${k}`] || "";
-      const act = a[`actual_${k}`] || "";
-      cells.push(`<td>
-        <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${plan}" disabled>
-        <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${act}" disabled>
-      </td>`);
-    });
-    cells.push(`<td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>`);
-    cells.push(`<td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>`);
-    cells.push(`<td>
-      <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
-      </div>
-    </td>`);
+    markDelaysInActivityTable(document);
+    showPlaceholderForEmptyDates("#activityTableTab tbody");
+  }
+}
 
-    const tr = document.createElement("tr");
-    tr.dataset.pid = pid;
-    tr.dataset.i = i;
-    tr.innerHTML = cells.join("");
-    tbodyFinal.appendChild(tr);
-  });
 
   // attach tab-level handlers (edit/delete/add/search)
   tb.querySelectorAll(".del-act-tab").forEach(b => {
@@ -996,9 +1028,10 @@ function renderActivityTableInTab(pid) {
       // const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
       // acts.splice(idx, 1);
       // localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
-      loadActivitiesFromFirebase(pid).then(acts => {
-        acts[idx] = Object.assign({}, acts[idx], obj);
-        saveActivitiesToFirebase(pid, acts);
+      loadActivitiesFromFirebase(pid).then(async acts => {
+        acts.splice(idx, 1);
+        await saveActivitiesToFirebase(pid, acts);
+        renderActivityTableInTab(pid);
       });
       renderActivityTableInTab(pid);
     };
@@ -1029,10 +1062,11 @@ function renderActivityTableInTab(pid) {
         obj.level = arr[p++].value;
         obj.supplier = arr[p++].value;
 
-        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-        acts[idx] = Object.assign({}, acts[idx], obj);
-        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
-        renderActivityTableInTab(pid);
+        loadActivitiesFromFirebase(pid).then(async acts => {
+          acts[idx] = Object.assign({}, acts[idx], obj);
+          await saveActivitiesToFirebase(pid, acts);
+          renderActivityTableInTab(pid);
+        });
         showPlaceholderForEmptyDates("#activityTableTab tbody");
       }
     };
@@ -1042,15 +1076,17 @@ function renderActivityTableInTab(pid) {
   const addGlobal = document.getElementById("addActivityGlobal");
   if (addGlobal) {
     addGlobal.onclick = () => {
-      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-      acts.push({
-        activity: "New Task",
-        site: siteOpts[0] || "",
-        owner: ownerOpts[0] || "",
-        supplier: supplierOpts[0] || ""
+      loadActivitiesFromFirebase(pid).then(async acts => {
+        const updated = acts || [];
+        updated.push({
+          activity: "New Task",
+          site: siteOpts[0] || "",
+          owner: ownerOpts[0] || "",
+          supplier: supplierOpts[0] || ""
+        });
+        await saveActivitiesToFirebase(pid, updated);
+        renderActivityTableInTab(pid);
       });
-      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
-      renderActivityTableInTab(pid);
     };
   }
 
@@ -1064,7 +1100,7 @@ function renderActivityTableInTab(pid) {
 // Updated: move phaseName into Remarks and avoid duplication
 // Includes filter & search support for Open List
 // ===============================
-function renderOpenList() {
+async function renderOpenList() {
   const tbody = document.getElementById("openListBody");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -1100,13 +1136,14 @@ function renderOpenList() {
   };
 
   let rows = [];
-  projectData.forEach((proj, pid) => {
+  for (let pid = 0; pid < projectData.length; pid++) {
+    const proj = projectData[pid];
     // apply project-level filters early to skip unnecessary activities
-    if (fType && proj.type !== fType) return;
-    if (fModel && proj.model !== fModel) return;
-    if (fSite && proj.site !== fSite) return;
+    if (fType && proj.type !== fType) continue;
+    if (fModel && proj.model !== fModel) continue;
+    if (fSite && proj.site !== fSite) continue;
+    const acts = await loadActivitiesFromFirebase(pid) || [];
 
-    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     acts.forEach((a, aid) => {
       phaseKeys.forEach(pk => {
         const plan = a[`plan_${pk}`] || "";
@@ -1224,7 +1261,7 @@ function renderOpenList() {
   });
 
   // row click handlers for edit/delete
-  tbody.onclick = (e) => {
+  tbody.onclick = async (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const tr = btn.closest("tr");
@@ -1236,9 +1273,9 @@ function renderOpenList() {
 
     if (btn.classList.contains("open-del")) {
       if (!confirm("Delete this activity? This will remove the whole activity for the project.")) return;
-      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      const acts = await loadActivitiesFromFirebase(pid);
       acts.splice(aid, 1);
-      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+      await saveActivitiesToFirebase(pid, acts);
       renderOpenList();
       return;
     }
@@ -1250,7 +1287,7 @@ function renderOpenList() {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
-        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+        const acts = await loadActivitiesFromFirebase(pid);
         const actObj = acts[aid] || {};
         const phaseKey = phase;
 
@@ -1291,7 +1328,7 @@ function renderOpenList() {
         if (suppSel) actObj.supplier = suppSel.value || actObj.supplier;
 
         acts[aid] = actObj;
-        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+        await saveActivitiesToFirebase(pid, acts);
         renderOpenList();
       }
     }
@@ -1427,7 +1464,7 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // When mouseenter on a plan/actual input, compute delay for that phase and show title tooltip
 // Menampilkan total Delay Days + Reason dari data Open List
 // ===============================
-document.addEventListener("mouseover", (e) => {
+document.addEventListener("mouseover", async (e) => {
   const el = e.target;
   if (!el) return;
   const field = el.getAttribute("data-field");
@@ -1465,7 +1502,7 @@ document.addEventListener("mouseover", (e) => {
 
   // Ambil reason dari data activity yang tersimpan di localStorage
   try {
-    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+    const acts = await loadActivitiesFromFirebase(pid);
     // ambil index row
     const idx = parseInt(row.dataset.i || row.dataset.aid || row.dataset.row || row.rowIndex, 10);
     const act = acts[idx];
