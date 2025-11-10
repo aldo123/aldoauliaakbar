@@ -375,18 +375,6 @@ onValue(ref(db, "projects/"), (snapshot) => {
   }
 });
 
-onValue(ref(db, "activities/"), (snapshot) => {
-  if (!snapshot.exists()) return;
-  console.log("🔁 Activities updated in real-time");
-
-  const activeTab = document.querySelector(".tab.active");
-  // Jika tab Activity sedang terbuka, otomatis refresh datanya
-  if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
-    const pid = activeTab.dataset.page.split("-")[1];
-    renderActivityTableInTab(pid);
-  }
-});
-
 // ===============================
 // HELPERS: select HTML & date cell
 // ===============================
@@ -768,7 +756,7 @@ function openActivityModal(pid) {
   }
 
   // click handlers inside modal tbody
-  tbody.onclick = async (e) => {
+  tbody.onclick = (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const i = parseInt(btn.dataset.i, 10);
@@ -936,142 +924,78 @@ function markDelaysInActivityTable(containerEl = document) {
 // RENDER Activity in TAB (full page) — new feature
 // pageKey should be "activity-{pid}"
 // ===============================
-// ===============================
-// ✅ FINAL: RENDER Activity in TAB (full page) — fixed async version
-// ===============================
-async function renderActivityTableInTab(pid) {
+function renderActivityTableInTab(pid) {
   const container = document.getElementById("main-content");
   if (!container) return;
-  
-  // Pastikan tabel ada
+  // render placeholder (already inserted by setActiveTab) - now populate tbody
   const tbody = container.querySelector("#activityTableTab tbody");
   if (!tbody) {
+    // If placeholder not present (older pages), inject full activity placeholder
     container.innerHTML = pages["activity-tab-placeholder"];
   }
-  
+  // after ensuring placeholder, re-select
   const tb = document.getElementById("activityTableTab");
   if (!tb) return;
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
+  // const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+  let data = [];
 
-  // 🔥 Tunggu data selesai diambil dari Firebase dulu
-  const data = await loadActivitiesFromFirebase(pid);
-  populateActivityTab(data || []);
+  loadActivitiesFromFirebase(pid).then(async acts => {
+    acts.splice(idx, 1);
+    await saveActivitiesToFirebase(pid, acts);
+    renderActivityTableInTab(pid);
+  });
 
-  // Fungsi ini render isi tabel Activity
   function populateActivityTab(data) {
-    const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
-    const siteOpts = configData.site || [];
-    const supplierOpts = configData.supplier || [];
+    // isi dengan sisa logika render tabel
+  }
 
-    tbodyFinal.innerHTML = "";
+  // option pools
+  const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
+  const siteOpts = configData.site || [];
+  const supplierOpts = configData.supplier || [];
 
-    data.forEach((a, i) => {
-      a.activity = a.activity || "";
-      a.site = a.site || siteOpts[0] || "";
-      a.owner = a.owner || ownerOpts[0] || "";
-      a.level = a.level || "";
-      a.supplier = a.supplier || supplierOpts[0] || "";
-      activityDateFields.forEach(k => {
-        if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
-        if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
-      });
-
-      const tr = document.createElement("tr");
-      tr.dataset.pid = pid;
-      tr.dataset.i = i;
-      tr.innerHTML = `
-        <td class="text-center">${i+1}</td>
-        <td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>
-        <td>${renderSelectHtml("site", siteOpts, a.site)}</td>
-        <td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>
-        ${activityDateFields.map(k => `
-          <td>
-            <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${a[`plan_${k}`]}" disabled>
-            <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${a[`actual_${k}`]}" disabled>
-          </td>`).join("")}
-        <td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>
-        <td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>
-        <td>
-          <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
-          </div>
-        </td>`;
-      tbodyFinal.appendChild(tr);
+  data.forEach((a, i) => {
+    a.activity = a.activity || "";
+    a.site = a.site || siteOpts[0] || "";
+    a.owner = a.owner || ownerOpts[0] || "";
+    a.level = a.level || "";
+    a.supplier = a.supplier || supplierOpts[0] || "";
+    activityDateFields.forEach(k => {
+      if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
+      if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
     });
 
-    markDelaysInActivityTable(document);
-    showPlaceholderForEmptyDates("#activityTableTab tbody");
-  }
+    // build row
+    const cells = [];
+    cells.push(`<td class="text-center">${i+1}</td>`);
+    cells.push(`<td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>`);
+    cells.push(`<td>${renderSelectHtml("site", siteOpts, a.site)}</td>`);
+    cells.push(`<td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>`);
+    activityDateFields.forEach(k => {
+      const plan = a[`plan_${k}`] || "";
+      const act = a[`actual_${k}`] || "";
+      cells.push(`<td>
+        <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${plan}" disabled>
+        <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${act}" disabled>
+      </td>`);
+    });
+    cells.push(`<td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>`);
+    cells.push(`<td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>`);
+    cells.push(`<td>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
+      </div>
+    </td>`);
 
-  // Handler untuk delete & edit
-  tb.querySelectorAll(".del-act-tab").forEach(b => {
-    b.onclick = async () => {
-      const idx = parseInt(b.dataset.i, 10);
-      if (!confirm("Delete activity?")) return;
-      const acts = await loadActivitiesFromFirebase(pid);
-      acts.splice(idx, 1);
-      await saveActivitiesToFirebase(pid, acts);
-      renderActivityTableInTab(pid);
-    };
+    const tr = document.createElement("tr");
+    tr.dataset.pid = pid;
+    tr.dataset.i = i;
+    tr.innerHTML = cells.join("");
+    tbodyFinal.appendChild(tr);
   });
-
-  tb.querySelectorAll(".edit-act-tab").forEach(b => {
-    b.onclick = async (e) => {
-      const btn = e.currentTarget;
-      const idx = parseInt(btn.dataset.i, 10);
-      const row = btn.closest("tr");
-      const inputs = row.querySelectorAll("input, select");
-      const toggled = btn.classList.toggle("editing");
-      if (toggled) {
-        inputs.forEach(x => x.disabled = false);
-        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-      } else {
-        const arr = Array.from(inputs);
-        let p = 0;
-        const obj = {};
-        obj.activity = arr[p++].value;
-        obj.site = arr[p++].value;
-        obj.owner = arr[p++].value;
-        activityDateFields.forEach(k => {
-          obj[`plan_${k}`] = arr[p++].value;
-          obj[`actual_${k}`] = arr[p++].value;
-        });
-        obj.level = arr[p++].value;
-        obj.supplier = arr[p++].value;
-
-        const acts = await loadActivitiesFromFirebase(pid);
-        acts[idx] = Object.assign({}, acts[idx], obj);
-        await saveActivitiesToFirebase(pid, acts);
-        renderActivityTableInTab(pid);
-      }
-    };
-  });
-
-  // 🟢 FIX: tombol Add Task Global
-  const addGlobal = document.getElementById("addActivityGlobal");
-  if (addGlobal) {
-    addGlobal.onclick = async () => {
-      const acts = await loadActivitiesFromFirebase(pid);
-      const updated = acts || [];
-      updated.push({
-        activity: "New Task",
-        site: configData.site[0] || "",
-        owner: configData.ee[0] || configData.tpm[0] || "",
-        supplier: configData.supplier[0] || "",
-        level: ""
-      });
-      await saveActivitiesToFirebase(pid, updated);
-      renderActivityTableInTab(pid);
-    };
-  }
-
-  markDelaysInActivityTable(document);
-  showPlaceholderForEmptyDates("#activityTableTab tbody");
-}
-
-
 
   // attach tab-level handlers (edit/delete/add/search)
   tb.querySelectorAll(".del-act-tab").forEach(b => {
@@ -1130,16 +1054,16 @@ async function renderActivityTableInTab(pid) {
   if (addGlobal) {
     addGlobal.onclick = () => {
       loadActivitiesFromFirebase(pid).then(async acts => {
-        const updated = acts || [];
-        updated.push({
-          activity: "New Task",
-          site: siteOpts[0] || "",
-          owner: ownerOpts[0] || "",
-          supplier: supplierOpts[0] || ""
-        });
-        await saveActivitiesToFirebase(pid, updated);
-        renderActivityTableInTab(pid);
+      const updated = acts || [];
+      updated.push({
+        activity: "New Task",
+        site: siteOpts[0] || "",
+        owner: ownerOpts[0] || "",
+        supplier: supplierOpts[0] || ""
       });
+      await saveActivitiesToFirebase(pid, updated);
+      renderActivityTableInTab(pid);
+    });
     };
   }
 
@@ -1153,7 +1077,7 @@ async function renderActivityTableInTab(pid) {
 // Updated: move phaseName into Remarks and avoid duplication
 // Includes filter & search support for Open List
 // ===============================
-async function renderOpenList() {
+function renderOpenList() {
   const tbody = document.getElementById("openListBody");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -1189,14 +1113,13 @@ async function renderOpenList() {
   };
 
   let rows = [];
-  for (let pid = 0; pid < projectData.length; pid++) {
-    const proj = projectData[pid];
+  projectData.forEach((proj, pid) => {
     // apply project-level filters early to skip unnecessary activities
-    if (fType && proj.type !== fType) continue;
-    if (fModel && proj.model !== fModel) continue;
-    if (fSite && proj.site !== fSite) continue;
-    const acts = await loadActivitiesFromFirebase(pid) || [];
+    if (fType && proj.type !== fType) return;
+    if (fModel && proj.model !== fModel) return;
+    if (fSite && proj.site !== fSite) return;
 
+    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     acts.forEach((a, aid) => {
       phaseKeys.forEach(pk => {
         const plan = a[`plan_${pk}`] || "";
@@ -1314,7 +1237,7 @@ async function renderOpenList() {
   });
 
   // row click handlers for edit/delete
-  tbody.onclick = async (e) => {
+  tbody.onclick = (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const tr = btn.closest("tr");
@@ -1326,9 +1249,9 @@ async function renderOpenList() {
 
     if (btn.classList.contains("open-del")) {
       if (!confirm("Delete this activity? This will remove the whole activity for the project.")) return;
-      const acts = await loadActivitiesFromFirebase(pid);
+      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
       acts.splice(aid, 1);
-      await saveActivitiesToFirebase(pid, acts);
+      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
       renderOpenList();
       return;
     }
@@ -1340,7 +1263,7 @@ async function renderOpenList() {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
-        const acts = await loadActivitiesFromFirebase(pid);
+        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
         const actObj = acts[aid] || {};
         const phaseKey = phase;
 
@@ -1381,7 +1304,7 @@ async function renderOpenList() {
         if (suppSel) actObj.supplier = suppSel.value || actObj.supplier;
 
         acts[aid] = actObj;
-        await saveActivitiesToFirebase(pid, acts);
+        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
         renderOpenList();
       }
     }
@@ -1517,7 +1440,7 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // When mouseenter on a plan/actual input, compute delay for that phase and show title tooltip
 // Menampilkan total Delay Days + Reason dari data Open List
 // ===============================
-document.addEventListener("mouseover", async (e) => {
+document.addEventListener("mouseover", (e) => {
   const el = e.target;
   if (!el) return;
   const field = el.getAttribute("data-field");
@@ -1555,7 +1478,7 @@ document.addEventListener("mouseover", async (e) => {
 
   // Ambil reason dari data activity yang tersimpan di localStorage
   try {
-    const acts = await loadActivitiesFromFirebase(pid);
+    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     // ambil index row
     const idx = parseInt(row.dataset.i || row.dataset.aid || row.dataset.row || row.rowIndex, 10);
     const act = acts[idx];
