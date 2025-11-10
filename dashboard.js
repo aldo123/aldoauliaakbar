@@ -231,7 +231,6 @@ const pages = {
         <tbody></tbody>
       </table>
     </div>`,
-
   "file-list": "<h4>File List</h4><p>All project documents managed here.</p>",
   "open-list-old": "<h4>Open List (legacy)</h4>",
   "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
@@ -372,6 +371,18 @@ onValue(ref(db, "projects/"), (snapshot) => {
     projectData = snapshot.val();
     renderProjectTable(projectData);
     console.log("🔁 Project data updated in real-time");
+  }
+});
+
+onValue(ref(db, "activities/"), (snapshot) => {
+  if (!snapshot.exists()) return;
+  console.log("🔁 Activities updated in real-time");
+
+  const activeTab = document.querySelector(".tab.active");
+  // Jika tab Activity sedang terbuka, otomatis refresh datanya
+  if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
+    const pid = activeTab.dataset.page.split("-")[1];
+    renderActivityTableInTab(pid);
   }
 });
 
@@ -756,7 +767,7 @@ function openActivityModal(pid) {
   }
 
   // click handlers inside modal tbody
-  tbody.onclick = (e) => {
+  tbody.onclick = async (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const i = parseInt(btn.dataset.i, 10);
@@ -924,98 +935,89 @@ function markDelaysInActivityTable(containerEl = document) {
 // RENDER Activity in TAB (full page) — new feature
 // pageKey should be "activity-{pid}"
 // ===============================
-function renderActivityTableInTab(pid) {
+// ===============================
+// ✅ FINAL: RENDER Activity in TAB (full page) — fixed async version
+// ===============================
+async function renderActivityTableInTab(pid) {
   const container = document.getElementById("main-content");
   if (!container) return;
-  // render placeholder (already inserted by setActiveTab) - now populate tbody
+  
+  // Pastikan tabel ada
   const tbody = container.querySelector("#activityTableTab tbody");
   if (!tbody) {
-    // If placeholder not present (older pages), inject full activity placeholder
     container.innerHTML = pages["activity-tab-placeholder"];
   }
-  // after ensuring placeholder, re-select
+  
   const tb = document.getElementById("activityTableTab");
   if (!tb) return;
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
-  // const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-  let data = [];
 
-  loadActivitiesFromFirebase(pid).then(async acts => {
-    acts.splice(idx, 1);
-    await saveActivitiesToFirebase(pid, acts);
-    renderActivityTableInTab(pid);
-  });
+  // 🔥 Tunggu data selesai diambil dari Firebase dulu
+  const data = await loadActivitiesFromFirebase(pid);
+  populateActivityTab(Array.isArray(data) ? data : []);
 
+  // Fungsi ini render isi tabel Activity
   function populateActivityTab(data) {
-    // isi dengan sisa logika render tabel
+    const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
+    const siteOpts = configData.site || [];
+    const supplierOpts = configData.supplier || [];
+
+    tbodyFinal.innerHTML = "";
+
+    data.forEach((a, i) => {
+      a.activity = a.activity || "";
+      a.site = a.site || siteOpts[0] || "";
+      a.owner = a.owner || ownerOpts[0] || "";
+      a.level = a.level || "";
+      a.supplier = a.supplier || supplierOpts[0] || "";
+      activityDateFields.forEach(k => {
+        if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
+        if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
+      });
+
+      const tr = document.createElement("tr");
+      tr.dataset.pid = pid;
+      tr.dataset.i = i;
+      tr.innerHTML = `
+        <td class="text-center">${i+1}</td>
+        <td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>
+        <td>${renderSelectHtml("site", siteOpts, a.site)}</td>
+        <td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>
+        ${activityDateFields.map(k => `
+          <td>
+            <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${a[`plan_${k}`]}" disabled>
+            <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${a[`actual_${k}`]}" disabled>
+          </td>`).join("")}
+        <td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>
+        <td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>`;
+      tbodyFinal.appendChild(tr);
+    });
+
+    markDelaysInActivityTable(document);
+    showPlaceholderForEmptyDates("#activityTableTab tbody");
   }
 
-  // option pools
-  const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
-  const siteOpts = configData.site || [];
-  const supplierOpts = configData.supplier || [];
-
-  data.forEach((a, i) => {
-    a.activity = a.activity || "";
-    a.site = a.site || siteOpts[0] || "";
-    a.owner = a.owner || ownerOpts[0] || "";
-    a.level = a.level || "";
-    a.supplier = a.supplier || supplierOpts[0] || "";
-    activityDateFields.forEach(k => {
-      if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
-      if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
-    });
-
-    // build row
-    const cells = [];
-    cells.push(`<td class="text-center">${i+1}</td>`);
-    cells.push(`<td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>`);
-    cells.push(`<td>${renderSelectHtml("site", siteOpts, a.site)}</td>`);
-    cells.push(`<td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>`);
-    activityDateFields.forEach(k => {
-      const plan = a[`plan_${k}`] || "";
-      const act = a[`actual_${k}`] || "";
-      cells.push(`<td>
-        <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${plan}" disabled>
-        <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${act}" disabled>
-      </td>`);
-    });
-    cells.push(`<td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>`);
-    cells.push(`<td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>`);
-    cells.push(`<td>
-      <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
-      </div>
-    </td>`);
-
-    const tr = document.createElement("tr");
-    tr.dataset.pid = pid;
-    tr.dataset.i = i;
-    tr.innerHTML = cells.join("");
-    tbodyFinal.appendChild(tr);
-  });
-
-  // attach tab-level handlers (edit/delete/add/search)
+  // Handler untuk delete & edit
   tb.querySelectorAll(".del-act-tab").forEach(b => {
-    b.onclick = (e) => {
+    b.onclick = async () => {
       const idx = parseInt(b.dataset.i, 10);
       if (!confirm("Delete activity?")) return;
-      // const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-      // acts.splice(idx, 1);
-      // localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
-      loadActivitiesFromFirebase(pid).then(async acts => {
-        acts.splice(idx, 1);
-        await saveActivitiesToFirebase(pid, acts);
-        renderActivityTableInTab(pid);
-      });
+      const acts = await loadActivitiesFromFirebase(pid);
+      acts.splice(idx, 1);
+      await saveActivitiesToFirebase(pid, acts);
       renderActivityTableInTab(pid);
     };
   });
 
   tb.querySelectorAll(".edit-act-tab").forEach(b => {
-    b.onclick = (e) => {
+    b.onclick = async (e) => {
       const btn = e.currentTarget;
       const idx = parseInt(btn.dataset.i, 10);
       const row = btn.closest("tr");
@@ -1025,7 +1027,6 @@ function renderActivityTableInTab(pid) {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
-        // save
         const arr = Array.from(inputs);
         let p = 0;
         const obj = {};
@@ -1039,35 +1040,32 @@ function renderActivityTableInTab(pid) {
         obj.level = arr[p++].value;
         obj.supplier = arr[p++].value;
 
-        loadActivitiesFromFirebase(pid).then(async acts => {
-          acts[idx] = Object.assign({}, acts[idx], obj);
-          await saveActivitiesToFirebase(pid, acts);
-          renderActivityTableInTab(pid);
-        });
-        showPlaceholderForEmptyDates("#activityTableTab tbody");
+        const acts = await loadActivitiesFromFirebase(pid);
+        acts[idx] = Object.assign({}, acts[idx], obj);
+        await saveActivitiesToFirebase(pid, acts);
+        renderActivityTableInTab(pid);
       }
     };
   });
 
-  // add task global (if button exists)
+  // 🟢 FIX: tombol Add Task Global
   const addGlobal = document.getElementById("addActivityGlobal");
   if (addGlobal) {
-    addGlobal.onclick = () => {
-      loadActivitiesFromFirebase(pid).then(async acts => {
-      const updated = acts || [];
+    addGlobal.onclick = async () => {
+      const acts = await loadActivitiesFromFirebase(pid);
+      const updated = Array.isArray(acts) ? acts : [];
       updated.push({
         activity: "New Task",
-        site: siteOpts[0] || "",
-        owner: ownerOpts[0] || "",
-        supplier: supplierOpts[0] || ""
+        site: configData.site[0] || "",
+        owner: configData.ee[0] || configData.tpm[0] || "",
+        supplier: configData.supplier[0] || "",
+        level: ""
       });
       await saveActivitiesToFirebase(pid, updated);
       renderActivityTableInTab(pid);
-    });
     };
   }
 
-  // finalize appearance: mark delays colors
   markDelaysInActivityTable(document);
   showPlaceholderForEmptyDates("#activityTableTab tbody");
 }
@@ -1077,7 +1075,7 @@ function renderActivityTableInTab(pid) {
 // Updated: move phaseName into Remarks and avoid duplication
 // Includes filter & search support for Open List
 // ===============================
-function renderOpenList() {
+async function renderOpenList() {
   const tbody = document.getElementById("openListBody");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -1113,13 +1111,14 @@ function renderOpenList() {
   };
 
   let rows = [];
-  projectData.forEach((proj, pid) => {
+  for (let pid = 0; pid < projectData.length; pid++) {
+    const proj = projectData[pid];
     // apply project-level filters early to skip unnecessary activities
-    if (fType && proj.type !== fType) return;
-    if (fModel && proj.model !== fModel) return;
-    if (fSite && proj.site !== fSite) return;
+    if (fType && proj.type !== fType) continue;
+    if (fModel && proj.model !== fModel) continue;
+    if (fSite && proj.site !== fSite) continue;
+    const acts = await loadActivitiesFromFirebase(pid) || [];
 
-    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     acts.forEach((a, aid) => {
       phaseKeys.forEach(pk => {
         const plan = a[`plan_${pk}`] || "";
@@ -1162,8 +1161,6 @@ function renderOpenList() {
           remarks: a[`remarks_${pk}`] || a.remarks || ""
         };
 
-       
-
         // apply filters that require row-level knowledge
         if (fTPM) {
           const ownerName = (rowObj.ee || "").toString();
@@ -1185,7 +1182,7 @@ function renderOpenList() {
         rows.push(rowObj);
       });
     });
-  });
+  }
 
   // render rows
   rows.forEach((r, idx) => {
@@ -1237,7 +1234,7 @@ function renderOpenList() {
   });
 
   // row click handlers for edit/delete
-  tbody.onclick = (e) => {
+  tbody.onclick = async (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const tr = btn.closest("tr");
@@ -1249,9 +1246,9 @@ function renderOpenList() {
 
     if (btn.classList.contains("open-del")) {
       if (!confirm("Delete this activity? This will remove the whole activity for the project.")) return;
-      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      const acts = await loadActivitiesFromFirebase(pid);
       acts.splice(aid, 1);
-      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+      await saveActivitiesToFirebase(pid, acts);
       renderOpenList();
       return;
     }
@@ -1263,7 +1260,7 @@ function renderOpenList() {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
-        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+        const acts = await loadActivitiesFromFirebase(pid);
         const actObj = acts[aid] || {};
         const phaseKey = phase;
 
@@ -1304,7 +1301,7 @@ function renderOpenList() {
         if (suppSel) actObj.supplier = suppSel.value || actObj.supplier;
 
         acts[aid] = actObj;
-        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
+        await saveActivitiesToFirebase(pid, acts);
         renderOpenList();
       }
     }
@@ -1440,7 +1437,7 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // When mouseenter on a plan/actual input, compute delay for that phase and show title tooltip
 // Menampilkan total Delay Days + Reason dari data Open List
 // ===============================
-document.addEventListener("mouseover", (e) => {
+document.addEventListener("mouseover", async (e) => {
   const el = e.target;
   if (!el) return;
   const field = el.getAttribute("data-field");
@@ -1478,7 +1475,7 @@ document.addEventListener("mouseover", (e) => {
 
   // Ambil reason dari data activity yang tersimpan di localStorage
   try {
-    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+    const acts = await loadActivitiesFromFirebase(pid);
     // ambil index row
     const idx = parseInt(row.dataset.i || row.dataset.aid || row.dataset.row || row.rowIndex, 10);
     const act = acts[idx];
@@ -1585,4 +1582,3 @@ window.renderOpenList = renderOpenList;
 window.renderConfigTable = renderConfigTable;
 window.openActivityModal = openActivityModal;
 window.renderActivityTableInTab = renderActivityTableInTab;
-
