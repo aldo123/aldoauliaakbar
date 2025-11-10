@@ -1066,8 +1066,31 @@ async function renderActivityTableInTab(pid) {
     };
   }
 
+  setTimeout(() => {
+  const addGlobal = document.getElementById("addActivityGlobal");
+  if (addGlobal) {
+    addGlobal.onclick = async () => {
+      console.log("✅ Add Task clicked for pid:", pid);
+      const acts = await loadActivitiesFromFirebase(pid);
+      const updated = Array.isArray(acts) ? acts : [];
+      updated.push({
+        activity: "New Task",
+        site: configData.site[0] || "",
+        owner: configData.ee[0] || configData.tpm[0] || "",
+        supplier: configData.supplier[0] || "",
+        level: ""
+      });
+      await saveActivitiesToFirebase(pid, updated);
+      console.log("✅ Task added successfully, total:", updated.length);
+      renderActivityTableInTab(pid);
+    };
+  } else {
+    console.warn("⚠️ Add Task button not found yet, will retry next render...");
+  }
+
   markDelaysInActivityTable(document);
   showPlaceholderForEmptyDates("#activityTableTab tbody");
+}, 100); // Delay 100ms agar DOM sempat dirender
 }
 
 // ===============================
