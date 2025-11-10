@@ -1,3 +1,8 @@
+// ===============================
+// 🔥 FIREBASE CONNECTION
+// ===============================
+import { db, ref, set, get, update, remove, onValue } from "./firebase-config.js";
+
 // dashboard.js (FINAL + Activity Tab Edition)
 // Updated: Tab-based Activity Detail + preserved modal + full features (status color, hover tooltip, placeholder "--")
 // ===================================================================
@@ -36,8 +41,17 @@ const defaultConfig = {
   type: ["NPI", "KAIZEN&VAVE", "Downtime and Finding"]
 };
 
-let configData = JSON.parse(localStorage.getItem("configData")) || defaultConfig;
-saveConfig();
+let configData = defaultConfig;
+
+// Coba load config dari Firebase saat halaman pertama kali dibuka
+loadConfigFromFirebase().then(cfg => {
+  if (Object.keys(cfg).length > 0) {
+    configData = cfg;
+    console.log("✅ Config loaded from Firebase");
+  } else {
+    console.warn("⚠️ Using default config (no data in Firebase)");
+  }
+});
 
 // mapping untuk nama-nama filter (label kiri)
 const filterTitles = {
@@ -344,7 +358,20 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
 // PROJECT DATA (saved in localStorage key "projects")
 // schema: [{ title, type, model, site, tpm, ee, gate1...sop }]
 // ===============================
-let projectData = JSON.parse(localStorage.getItem("projects")) || [];
+let projectData = [];
+
+loadProjectsFromFirebase().then(data => {
+  projectData = data || [];
+  renderProjectTable(projectData);
+});
+
+onValue(ref(db, "projects/"), (snapshot) => {
+  if (snapshot.exists()) {
+    projectData = snapshot.val();
+    renderProjectTable(projectData);
+    console.log("🔁 Project data updated in real-time");
+  }
+});
 
 // ===============================
 // HELPERS: select HTML & date cell
@@ -397,7 +424,7 @@ function applyProjectFiltersAndRender() {
   const fee = (document.getElementById("filterEE")?.value || "").trim();
   const fst = (document.getElementById("filterStatus")?.value || "").trim();
 
-  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
   const filtered = projectData.filter(p => {
     let ok = true;
     if (ft && p.type !== ft) ok = false;
@@ -483,7 +510,7 @@ function renderProjectTable(filtered = null) {
   const tbody = document.getElementById("projectBody");
   if (!tbody) return;
   // ensure projectData from storage
-  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
   const rows = (filtered || projectData);
 
   tbody.innerHTML = "";
@@ -620,7 +647,7 @@ function toggleEditProjectRow(row, index) {
 }
 
 function saveProjects() {
-  localStorage.setItem("projects", JSON.stringify(projectData));
+  saveProjectsToFirebase(projectData);
 }
 
 // ===============================
@@ -1015,7 +1042,7 @@ function renderOpenList() {
   const tbody = document.getElementById("openListBody");
   if (!tbody) return;
   tbody.innerHTML = "";
-  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
 
   // read filter values
   const fType = (document.getElementById("openFilterType")?.value || "").trim();
@@ -1441,6 +1468,74 @@ document.addEventListener("mouseover", (e) => {
 
   el.title = tooltip;
 });
+
+// ===============================
+// 🔥 FIREBASE SAVE & LOAD FUNCTIONS
+// ===============================
+async function saveProjectsToFirebase(data) {
+  try {
+    await set(ref(db, "projects/"), data);
+    console.log("✅ Project data saved to Firebase");
+  } catch (error) {
+    console.error("❌ Error saving to Firebase:", error);
+  }
+}
+
+async function loadProjectsFromFirebase() {
+  try {
+    const snapshot = await get(ref(db, "projects/"));
+    if (snapshot.exists()) {
+      console.log("✅ Project data loaded from Firebase");
+      return snapshot.val();
+    } else {
+      console.warn("⚠️ No project data found in Firebase");
+      return [];
+    }
+  } catch (error) {
+    console.error("❌ Error loading from Firebase:", error);
+    return [];
+  }
+}
+
+// Simpan dan load konfigurasi sistem
+async function saveConfigToFirebase(config) {
+  try {
+    await set(ref(db, "config/default"), config);
+    console.log("✅ Config saved to Firebase");
+  } catch (error) {
+    console.error("❌ Error saving config:", error);
+  }
+}
+
+async function loadConfigFromFirebase() {
+  try {
+    const snapshot = await get(ref(db, "config/default"));
+    return snapshot.exists() ? snapshot.val() : {};
+  } catch (error) {
+    console.error("❌ Error loading config:", error);
+    return {};
+  }
+}
+
+// Simpan dan load aktivitas project
+async function saveActivitiesToFirebase(pid, activities) {
+  try {
+    await set(ref(db, `activities/${pid}`), activities);
+    console.log(`✅ Activities for ${pid} saved`);
+  } catch (error) {
+    console.error("❌ Error saving activities:", error);
+  }
+}
+
+async function loadActivitiesFromFirebase(pid) {
+  try {
+    const snapshot = await get(ref(db, `activities/${pid}`));
+    return snapshot.exists() ? snapshot.val() : [];
+  } catch (error) {
+    console.error("❌ Error loading activities:", error);
+    return [];
+  }
+}
 
 // ===============================
 // Utility for external usage
