@@ -382,6 +382,7 @@ onValue(ref(db, "activities/"), (snapshot) => {
     if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
       const pid = activeTab.dataset.page.split("-")[1];
       renderActivityTableInTab(pid);
+      markDelaysInActivityTable(document); // ✅ Tambahkan ini
     }
   }, 400);
 });
@@ -768,7 +769,10 @@ function openActivityModal(pid) {
     });
 
     // after render, mark delayed inputs (color background) for plan/actual comparisons
-    markDelaysInActivityTable(modalEl); // pass element context
+    render();
+    showPlaceholderForEmptyDates("#activityTable tbody");
+    markDelaysInActivityTable(modalEl); // ✅ Tambahkan baris ini
+    modal.show();
   }
 
   // click handlers inside modal tbody
