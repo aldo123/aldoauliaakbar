@@ -382,7 +382,7 @@ onValue(ref(db, "activities/"), (snapshot) => {
     if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
       const pid = activeTab.dataset.page.split("-")[1];
       renderActivityTableInTab(pid);
-      markDelaysInActivityTable(document); // ✅ Tambahkan ini
+      setTimeout(() => markDelaysInActivityTable(document), 600);
     }
   }, 400);
 });
@@ -1075,12 +1075,13 @@ async function renderActivityTableInTab(pid) {
     // ===============================
     setTimeout(() => {
       // 1️⃣ Warnai Delay dulu
-      markDelaysInActivityTable(document);
+      showPlaceholderForEmptyDates("#activityTableTab tbody");
 
       // 2️⃣ Baru tampilkan placeholder "--"
       setTimeout(() => {
-        showPlaceholderForEmptyDates("#activityTableTab tbody");
-      }, 300);
+        markDelaysInActivityTable(document);
+        console.log("✅ Delay color applied (after placeholder)");
+      }, 500);
     }, 300);
   }, 400);
 }
