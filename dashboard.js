@@ -617,7 +617,7 @@ function wrapTd(inner) { return `<td>${inner}</td>`; }
 
 function showPlaceholderForEmptyDates(containerSelector = "body") {
   document.querySelectorAll(`${containerSelector} input[type="date"]`).forEach(input => {
-    if (!input.value) {
+    if (!input.value || input.value === "--") {
       input.type = "text"; // ubah agar bisa tampilkan teks biasa
       input.value = "--";
       input.style.textAlign = "center";
@@ -685,6 +685,58 @@ function attachProjectSearchHandler() {
 // ACTIVITY DETAIL: modal & tab rendering (shared logic)
 // ===============================
 const activityDateFields = ["req","design","quotation","io","prpo","d3","cnc","assembly","eta","debugging","aging","validation","trial","pr","sop"];
+function markDelaysInActivityTable(containerEl = document) {
+  const root = (containerEl && containerEl.querySelector) ? containerEl : document;
+  const rows = root.querySelectorAll("#activityTable tbody tr, #activityTableTab tbody tr");
+
+  rows.forEach(row => {
+    activityDateFields.forEach(k => {
+      const planInput = row.querySelector(`[data-field="plan_${k}"]`);
+      const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
+      if (!planInput) return;
+
+      const planValRaw = planInput.value?.trim() || "";
+      const actualValRaw = actualInput?.value?.trim() || "";
+      const planVal = (planValRaw === "--" || planValRaw === "—") ? "" : planValRaw;
+      const actualVal = (actualValRaw === "--" || actualValRaw === "—") ? "" : actualValRaw;
+
+      [planInput, actualInput].forEach(inp => {
+        if (inp) {
+          inp.style.backgroundColor = "";
+          inp.classList.remove("border-danger");
+        }
+      });
+
+      if (!planVal) return;
+      const planDate = toDateOnly(planVal);
+      const actualDate = actualVal ? toDateOnly(actualVal) : null;
+      const today = toDateOnly(new Date());
+      let color = "";
+      let isDelay = false;
+
+      if (actualDate && actualDate > planDate) {
+        color = "#f8d7da";
+        isDelay = true;
+      } else if (!actualDate && planDate < today) {
+        color = "#f8d7da";
+        isDelay = true;
+      } else if (!actualDate && planDate >= today) {
+        color = "#fff3cd";
+      } else if (actualDate && actualDate <= planDate) {
+        color = "#d1e7dd";
+      }
+
+      [planInput, actualInput].forEach(inp => {
+        if (inp && color) inp.style.backgroundColor = color;
+      });
+
+      if (isDelay) {
+        if (planInput) planInput.classList.add("border-danger");
+        if (actualInput && !actualVal) actualInput.classList.add("border-danger");
+      }
+    });
+  });
+}
 
 // Render activity as modal (backward-compatible)
 function openActivityModal(pid) {
@@ -857,72 +909,6 @@ function renderSelectHtml(name, options = [], selected = "") {
   </select>`;
 }
 
-function markDelaysInActivityTable(containerEl = document) {
-  const root = (containerEl && containerEl.querySelector) ? containerEl : document;
-  const rows = root.querySelectorAll("#activityTable tbody tr, #activityTableTab tbody tr");
-
-  rows.forEach(row => {
-    activityDateFields.forEach(k => {
-      const planInput = row.querySelector(`[data-field="plan_${k}"]`);
-      const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
-      if (!planInput) return;
-
-      // Ambil nilai mentah (termasuk placeholder)
-      const planValRaw = planInput.value?.trim() || "";
-      const actualValRaw = actualInput?.value?.trim() || "";
-
-      // Placeholder "--" dianggap kosong
-      const planVal = (planValRaw === "--" || planValRaw === "—") ? "" : planValRaw;
-      const actualVal = (actualValRaw === "--" || actualValRaw === "—") ? "" : actualValRaw;
-
-      // Reset warna & border
-      [planInput, actualInput].forEach(inp => {
-        if (inp) {
-          inp.style.backgroundColor = "";
-          inp.classList.remove("border-danger");
-        }
-      });
-
-      if (!planVal) return; // skip jika belum ada tanggal plan
-
-      const planDate = toDateOnly(planVal);
-      const actualDate = actualVal ? toDateOnly(actualVal) : null;
-      const today = toDateOnly(new Date());
-      let color = "";
-      let isDelay = false;
-
-      // ✅ Kondisi 1: actual > plan → delay (merah muda)
-      if (actualDate && actualDate > planDate) {
-        color = "#f8d7da";
-        isDelay = true;
-      }
-      // ✅ Kondisi 2: belum ada actual & plan sudah lewat hari ini → delay (merah muda)
-      else if (!actualDate && planDate < today) {
-        color = "#f8d7da";
-        isDelay = true;
-      }
-      // ✅ Kondisi 3: belum ada actual & plan >= hari ini → kuning
-      else if (!actualDate && planDate >= today) {
-        color = "#fff3cd";
-      }
-      // ✅ Kondisi 4: actual ≤ plan → hijau
-      else if (actualDate && actualDate <= planDate) {
-        color = "#d1e7dd";
-      }
-
-      // Terapkan warna
-      [planInput, actualInput].forEach(inp => {
-        if (inp && color) inp.style.backgroundColor = color;
-      });
-
-      // Border merah hanya untuk delay
-      if (isDelay) {
-        if (planInput) planInput.classList.add("border-danger");
-        if (actualInput && !actualVal) actualInput.classList.add("border-danger");
-      }
-    });
-  });
-}
 
 
 // mark delayed inputs coloring in activity table (modal or tab)
