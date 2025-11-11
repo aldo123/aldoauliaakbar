@@ -4,7 +4,12 @@ const users = [
   { username: "Aldo", password: "admin" },
   { username: "Engineer", password: "tpm2025" },
   { username: "Jodimas", password: "106084" },
-  { username: "Tomi", password: "tomi1234" }
+  { username: "Suzie", password: "105556" },
+  { username: "Welsy", password: "102962" },
+  { username: "Reisya", password: "123456" },
+  { username: "Indra", password: "123456" },
+  { username: "Mahyu", password: "100864" },
+  { username: "Tomi", password: "105578" }
 ];
 
 const form = document.getElementById("loginForm");
