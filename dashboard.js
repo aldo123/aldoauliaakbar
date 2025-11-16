@@ -1,4 +1,4 @@
-// ===============================
+// ==============================
 // 🔥 FIREBASE CONNECTION
 // ===============================
 import { db, ref, set, get, update, remove, onValue } from "./firebase-config.js";
@@ -231,7 +231,7 @@ const pages = {
         <tbody></tbody>
       </table>
     </div>`,
-  "file-list": "<h4>File List</h4><p>All project documents managed here.</p>",
+  "Request-list": "<h4>Request List</h4><p>All project documents managed here.</p>",
   "open-list-old": "<h4>Open List (legacy)</h4>",
   "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
   "asset-category": "<h4>Asset Category</h4><p>Organize assets by group or functionality.</p>",
@@ -834,8 +834,7 @@ function openActivityModal(pid) {
     const i = parseInt(btn.dataset.i, 10);
     if (btn.classList.contains("del-act")) {
       if (!confirm("Delete activity?")) return;
-      data.splice(i, 1);
-      saveActToFirebase();
+      await deleteActivity(pid, data[i].id);
       render();
       return;
     }
@@ -861,8 +860,11 @@ function openActivityModal(pid) {
         obj.level = arr[idx++].value;
         obj.supplier = arr[idx++].value;
 
-        data[i] = Object.assign({}, data[i], obj);
-        saveAct();
+        const actId = data[i].id;
+        await saveSingleActivity(pid, actId, {
+          ...data[i],
+          ...obj
+        });
         render();
         showPlaceholderForEmptyDates("#activityTable tbody");
       }
@@ -871,14 +873,18 @@ function openActivityModal(pid) {
 
   // add / search handlers in modal
   const addBtn = modalEl.querySelector("#addActivityBtn");
-  addBtn.onclick = () => {
-    data.push({
+  addBtn.onclick = async () => {
+    const actId = generateActivityId();
+
+    await saveSingleActivity(pid, actId, {
       activity: "New Task",
       site: siteOpts[0] || "",
       owner: ownerOpts[0] || "",
-      supplier: supplierOpts[0] || ""
+      supplier: supplierOpts[0] || "",
+      level: ""
     });
-    saveAct(); render();
+
+    render();  // reload table
   };
   const searchInput = modalEl.querySelector("#searchActivity");
   searchInput.oninput = () => {
@@ -991,8 +997,7 @@ async function renderActivityTableInTab(pid) {
       const idx = parseInt(b.dataset.i, 10);
       if (!confirm("Delete activity?")) return;
       const acts = await loadActivitiesFromFirebase(pid);
-      acts.splice(idx, 1);
-      await saveActivitiesToFirebase(pid, acts);
+      await deleteActivity(pid, acts[idx].id);
       renderActivityTableInTab(pid);
     };
   });
@@ -1023,8 +1028,11 @@ async function renderActivityTableInTab(pid) {
         obj.supplier = arr[p++].value;
 
         const acts = await loadActivitiesFromFirebase(pid);
-        acts[idx] = Object.assign({}, acts[idx], obj);
-        await saveActivitiesToFirebase(pid, acts);
+        const actId = acts[idx].id;
+        await saveSingleActivity(pid, actId, {
+            ...acts[idx],
+            ...obj
+        });
         renderActivityTableInTab(pid);
       }
     };
@@ -1044,14 +1052,21 @@ async function renderActivityTableInTab(pid) {
       console.log("✅ Add Task clicked for pid:", pid);
       const acts = await loadActivitiesFromFirebase(pid);
       const updated = Array.isArray(acts) ? acts : [];
-      updated.push({
-        activity: "New Task",
-        site: configData.site[0] || "",
-        owner: configData.ee[0] || configData.tpm[0] || "",
-        supplier: configData.supplier[0] || "",
-        level: ""
-      });
-      await saveActivitiesToFirebase(pid, updated);
+      
+      addGlobal.onclick = async () => {
+        const actId = generateActivityId();
+
+        await saveSingleActivity(pid, actId, {
+          activity: "New Task",
+          site: configData.site[0] || "",
+          owner: configData.ee[0] || configData.tpm[0] || "",
+          supplier: configData.supplier[0] || "",
+          level: ""
+        });
+
+        renderActivityTableInTab(pid);
+      };
+
       console.log("✅ Task added successfully, total:", updated.length);
       renderActivityTableInTab(pid);
     };
@@ -1251,8 +1266,7 @@ async function renderOpenList() {
     if (btn.classList.contains("open-del")) {
       if (!confirm("Delete this activity? This will remove the whole activity for the project.")) return;
       const acts = await loadActivitiesFromFirebase(pid);
-      acts.splice(aid, 1);
-      await saveActivitiesToFirebase(pid, acts);
+      await deleteActivity(pid, acts[aid].id);
       renderOpenList();
       return;
     }
@@ -1304,8 +1318,7 @@ async function renderOpenList() {
         if (eeSel) actObj.owner = eeSel.value || actObj.owner;
         if (suppSel) actObj.supplier = suppSel.value || actObj.supplier;
 
-        acts[aid] = actObj;
-        await saveActivitiesToFirebase(pid, acts);
+        await saveSingleActivity(pid, acts[aid].id, actObj);
         renderOpenList();
       }
     }
@@ -1557,24 +1570,29 @@ async function loadConfigFromFirebase() {
   }
 }
 
-// Simpan dan load aktivitas project
-async function saveActivitiesToFirebase(pid, activities) {
-  try {
-    await set(ref(db, `activities/${pid}`), activities);
-    console.log(`✅ Activities for ${pid} saved`);
-  } catch (error) {
-    console.error("❌ Error saving activities:", error);
-  }
+function generateActivityId() {
+  return "ACT-" + Date.now() + "-" + Math.floor(Math.random() * 99999);
 }
 
+// Save per ID
+async function saveSingleActivity(pid, actId, actObj) {
+  await set(ref(db, `activities/${pid}/${actId}`), actObj);
+}
+
+// Delete per ID
+async function deleteActivity(pid, actId) {
+  await remove(ref(db, `activities/${pid}/${actId}`));
+}
+
+// Load object then convert to array with id
 async function loadActivitiesFromFirebase(pid) {
-  try {
-    const snapshot = await get(ref(db, `activities/${pid}`));
-    return snapshot.exists() ? snapshot.val() : [];
-  } catch (error) {
-    console.error("❌ Error loading activities:", error);
-    return [];
-  }
+  const snapshot = await get(ref(db, `activities/${pid}`));
+  if (!snapshot.exists()) return [];
+  const obj = snapshot.val();
+  return Object.entries(obj).map(([id, data]) => ({
+    id,
+    ...data
+  }));
 }
 
 // ===============================
