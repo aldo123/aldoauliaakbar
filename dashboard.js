@@ -1,4 +1,3 @@
-// ==============================
 // 🔥 FIREBASE CONNECTION
 // ===============================
 import { db, ref, set, get, update, remove, onValue } from "./firebase-config.js";
