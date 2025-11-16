@@ -181,26 +181,26 @@ async function computeTypeStats() {
 // OVERALL DONUT
 // ========================================================
 async function computeOverallTotals() {
-  let total = 0, completed = 0;
 
-  const aSnap = await get(ref(db, "activities"));
-  if (!aSnap.exists()) return { total:0, completed:0, percent:0 };
+  // 🔥 gunakan hasil engineerStats agar konsisten
+  const eng = await computeEngineerStats();
 
-  const acts = aSnap.val();
+  let totalTask = 0;
+  let completedTask = 0;
 
-  Object.values(acts).forEach(p => {
-    Object.values(p).forEach(a => {
-      total++;
-      const sop = getSOP(a);
-      if (sop.plan && sop.actual) completed++;
-    });
+  Object.values(eng).forEach(e => {
+    totalTask += e.completed + e.delay + e.progress;
+    completedTask += e.completed;
   });
 
   return {
-    total, completed,
-    percent: total ? (completed / total) * 100 : 0
+    totalTask,
+    completedTask,
+    percent: totalTask ? (completedTask / totalTask) * 100 : 0
   };
 }
+
+
 
 // ========================================================
 // DRAW ENGINEER CHART
@@ -344,34 +344,43 @@ function drawTypeChart(stats) {
 // ========================================================
 // DONUT CHART
 // ========================================================
-function drawDonutChart(o){
+function drawDonutChart(o) {
   const ctx = document.getElementById("chartDonut");
   if (charts.donut) charts.donut.destroy();
 
   const percent = Number(o.percent.toFixed(2));
 
-  charts.donut = new Chart(ctx,{
-    type:"doughnut",
-    data:{
-      labels:["Completed","Remaining"],
-      datasets:[
+  charts.donut = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Completed", "Remaining"],
+      datasets: [
         {
-          data:[o.completed, o.total - o.completed],
-          backgroundColor:["#2ecc71","#75c4fdff"],
-          borderWidth:2,
-          borderColor:"#083c1f"
+          data: [o.completedTask, o.totalTask - o.completedTask],
+          backgroundColor: ["#2ecc71", "rgba(170, 253, 179, 0.77)"],
+          borderWidth: 2,
+          borderColor: "#154717ff"
         }
       ]
     },
-    options:{
-      cutout:"68%",
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{ display:false }
+    options: {
+      cutout: "68%",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
       }
     }
   });
 
+  // ================================
+  // UPDATE CENTER + UNDER TEXT
+  // ================================
   document.getElementById("donutCenterLabel").textContent = percent + "%";
+
+  // Tambahan: jumlah completed task / total task
+  const infoBox = document.getElementById("donutTaskInfo");
+  if (infoBox) {
+    infoBox.textContent = `${o.completedTask} Completed / ${o.totalTask} Total Task`;
+  }
 }
