@@ -1,18 +1,86 @@
+/* project-state.css */
 .project-state-wrapper {
   background: #083c1f;
-  color: #fff;
+  color: #ffffff;
   border-radius: 8px;
-  padding: 20px;
+  padding: 18px;
 }
 
+/* Card */
 .chart-card {
   background: #0e5a2f;
   border-radius: 8px;
-  padding: 15px;
+  padding: 12px;
+  min-height: 260px;
+  box-shadow: inset 0 0 0 4px rgba(0,0,0,0.12);
 }
 
+/* Titles */
 .chart-title {
-  font-size: 15px;
-  margin-bottom: 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
   color: #ffffff;
+}
+
+/* Horizontal chart container */
+.chart-container-h {
+  width: 100%;
+  height: 320px; /* controllable */
+  padding: 6px 12px 6px 6px;
+}
+
+/* Vertical chart container */
+.chart-container-v {
+  width: 100%;
+  height: 320px;
+  padding: 6px 6px 6px 12px;
+}
+
+/* Donut card styles */
+.donut-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 190px;
+  height: 282px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.donut-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* center label inside donut */
+.donut-center {
+  position: absolute;
+  font-weight: 700;
+  font-size: 20px;
+  color: #2ecc71;
+  pointer-events: none;
+}
+
+/* small sub text */
+.donut-sub {
+  font-size: 12px;
+  color: #ffffff;
+  margin-top: 4px;
+}
+
+/* Make charts responsive on small screens */
+@media (max-width: 992px) {
+  .chart-container-h, .chart-container-v {
+    height: 260px;
+  }
+  .donut-wrap { width: 150px; height: 150px; }
+  .donut-center { font-size: 22px; }
 }
