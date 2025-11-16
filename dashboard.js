@@ -184,6 +184,9 @@ const pages = {
       <h4 class="m-0">Activity Detail</h4>
       <div class="ms-auto">
         <button id="addActivityGlobal" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Add Task</button>
+        <button id="exportActBtn" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Export Activity</button>
+        <button id="importActBtn" class="btn btn-outline-warning btn-sm"><i class="bi bi-upload"></i> Import Activity</button>
+        <input type="file" id="importActFile" accept=".xlsx,.xls" style="display:none;">
       </div>
     </div>
     <div class="table-responsive">
@@ -647,6 +650,8 @@ async function renderActivityTableInTab(pid){
   tb.querySelectorAll(".edit-act-tab").forEach(b=>{ b.onclick = async (e)=>{ const btn = e.currentTarget; const idx = parseInt(btn.dataset.i,10); const row = btn.closest("tr"); const inputs = row.querySelectorAll("input, select"); const toggled = btn.classList.toggle("editing"); if(toggled){ inputs.forEach(x=>x.disabled=false); btn.innerHTML='<i class="bi bi-check-lg"></i>'; } else { const arr = Array.from(inputs); let p=0; const obj={}; obj.activity = arr[p++].value; obj.site = arr[p++].value; obj.owner = arr[p++].value; activityDateFields.forEach(k=>{ obj[`plan_${k}`] = arr[p++].value; obj[`actual_${k}`] = arr[p++].value; }); obj.level = arr[p++].value; obj.supplier = arr[p++].value; const acts = await loadActivitiesFromFirebase(pid); const actId = acts[idx].id; await saveSingleActivity(pid, actId, { ...acts[idx], ...obj }); renderActivityTableInTab(pid); } }; });
 
   setTimeout(()=>{ const addGlobal = document.getElementById("addActivityGlobal"); if(!addGlobal) return; addGlobal.onclick = async ()=>{ const actId = generateActivityId(); await saveSingleActivity(pid, actId, { activity:"New Task", site:configData.site[0]||"", owner:configData.ee[0]||configData.tpm[0]||"", supplier:configData.supplier[0]||"", level:"" }); renderActivityTableInTab(pid); }; setTimeout(()=>{ showPlaceholderForEmptyDates("#activityTableTab tbody"); setTimeout(()=>{ markDelaysInActivityTable(document); },500); },300); },400);
+  setTimeout(()=>{ const exportBtn = document.getElementById("exportActBtn"); if (exportBtn) {exportBtn.onclick = () => exportActivityToExcel(pid);}const importBtn = document.getElementById("importActBtn");const importFile = document.getElementById("importActFile");if (importBtn && importFile) {importBtn.onclick = () => importFile.click();importFile.onchange = (e) => {importActivityFromExcel(pid, e.target.files[0]);};}}, 500);
+
 }
 
 // OPEN LIST (preserve behavior) — iterates projectData and reads activities per project
@@ -769,6 +774,37 @@ async function exportProjectListToExcel(data){
     XLSX.writeFile(wb, "ProjectList.xlsx");
 }
 
+async function exportActivityToExcel(pid) {
+    const acts = await loadActivitiesFromFirebase(pid);
+
+    if (!acts.length) {
+        alert("No activity data to export.");
+        return;
+    }
+
+    const rows = acts.map(a => ({
+        ActivityID: a.id,
+        Activity: a.activity || "",
+        Site: a.site || "",
+        Owner: a.owner || "",
+        Supplier: a.supplier || "",
+        Level: a.level || "",
+        ...Object.fromEntries(
+            activityDateFields.flatMap(k => [
+                [`Plan_${k.toUpperCase()}`, a[`plan_${k}`] || ""],
+                [`Actual_${k.toUpperCase()}`, a[`actual_${k}`] || ""]
+            ])
+        )
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "ActivityList");
+
+    XLSX.writeFile(wb, `Activity_${pid}.xlsx`);
+}
+
+
 async function handleProjectListImport(file){
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -808,6 +844,39 @@ async function handleProjectListImport(file){
         alert("Import berhasil!");
     };
 
+    reader.readAsArrayBuffer(file);
+}
+
+async function importActivityFromExcel(pid, file) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        for (const r of rows) {
+            const actId = r.ActivityID || generateActivityId();
+            const obj = {
+                activity: r.Activity || "",
+                site: r.Site || "",
+                owner: r.Owner || "",
+                supplier: r.Supplier || "",
+                level: r.Level || "",
+            };
+
+            activityDateFields.forEach(k => {
+                obj[`plan_${k}`] = r[`Plan_${k.toUpperCase()}`] || "";
+                obj[`actual_${k}`] = r[`Actual_${k.toUpperCase()}`] || "";
+            });
+
+            await saveSingleActivity(pid, actId, obj);
+        }
+
+        alert("Activity Import Success!");
+
+        renderActivityTableInTab(pid);
+    };
     reader.readAsArrayBuffer(file);
 }
 
