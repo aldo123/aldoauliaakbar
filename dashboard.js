@@ -114,9 +114,31 @@ function loadGanttModule(){
   }).catch(err=>console.error("Failed to load Gantt module:", err));
 }
 
+function loadProjectStateModule() {
+  fetch("project-state.html")
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      // inject CSS
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "project-state.css";
+      document.head.appendChild(link);
+
+      // inject JS
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "project-state.js";
+      document.body.appendChild(script);
+    })
+    .catch(err => console.error("Failed loading Project State module:", err));
+}
+
+
 // PAGES snippets (unchanged)
 const pages = {
-  "project-state": "<div id='ganttLoader'></div>",
+  "project-state": "<div id='projectStateContainer'></div>",
   "npi": "<h4>NPI</h4><p>New Product Introduction tracking dashboard.</p>",
   "project-list": `
     <h4>Project List</h4>
@@ -255,7 +277,7 @@ function setActiveTab(pageKey){
 function showWelcomePage(){ document.getElementById("main-content").innerHTML = `<div class="text-center p-4"><h4>Welcome to WIK-TPM Dashboard</h4><p>Select a menu from the sidebar to view content.</p></div>`; document.getElementById("page-title").textContent="Dashboard Overview"; }
 
 // Sidebar handler
-document.querySelectorAll(".menu li[data-page]").forEach(item=>{ item.addEventListener("click", ()=>{ const key=item.getAttribute("data-page"); const title=item.textContent.trim(); openTab(key,title); if (key==="project-state") loadGanttModule(); }); });
+document.querySelectorAll(".menu li[data-page]").forEach(item=>{ item.addEventListener("click", ()=>{ const key=item.getAttribute("data-page"); const title=item.textContent.trim(); openTab(key,title); if (key==="project-state") loadProjectStateModule(); }); });
 
 // ===============================
 // PROJECT DATA (Option 1 storage)
