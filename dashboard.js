@@ -821,7 +821,7 @@ function openActivityModal(pid) {
     });
 
     // after render, mark delayed inputs (color background) for plan/actual comparisons
-    render();
+    // render();
     showPlaceholderForEmptyDates("#activityTable tbody");
     markDelaysInActivityTable(modalEl); // ✅ Tambahkan baris ini
     modal.show();
