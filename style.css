@@ -367,3 +367,25 @@ input[type="date"].form-control-sm,
   table { font-size: 12px; }
 }
 
+/* ===================================
+   FIX: Tampilkan '--' pada input tanggal kosong
+   =================================== */
+input[type="date"].empty-date {
+  position: relative;
+  color-scheme: light dark;
+}
+
+input[type="date"].empty-date::before {
+  content: "--";
+  color: #999;
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+  font-style: italic;
+}
+
+input[type="date"]:not(.empty-date)::before {
+  content: none;
+}
