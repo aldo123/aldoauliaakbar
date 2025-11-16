@@ -734,6 +734,16 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // Extra: hover tooltip with delay & reason
 document.addEventListener("mouseover", async (e)=>{ const el=e.target; if(!el) return; const field = el.getAttribute("data-field"); if(!field || (!field.startsWith("plan_") && !field.startsWith("actual_"))) return; const td = el.closest("td"); const row = el.closest("tr"); if(!td || !row) return; let pid=null; const modalEl=document.getElementById("activityModal"); if (modalEl && modalEl.getAttribute("data-pid")) pid = modalEl.getAttribute("data-pid"); else pid = row.dataset.pid || null; if (pid===null || pid===undefined) return; const phase = field.replace("plan_","").replace("actual_",""); const planVal = row.querySelector(`[data-field="plan_${phase}"]`)?.value || ""; const actualVal = row.querySelector(`[data-field="actual_${phase}"]`)?.value || ""; const delayDays = computePhaseDelay(planVal, actualVal); let tooltip = ""; if (delayDays && delayDays>0) tooltip += `Delay: ${delayDays} day${delayDays>1?"s":""}`; try{ const acts = await loadActivitiesFromFirebase(pid); const idx = parseInt(row.dataset.i||row.dataset.aid||row.dataset.row||row.rowIndex,10); const act = acts[idx]; let reason=""; let action=""; if(phase){ reason = (act && Object.prototype.hasOwnProperty.call(act, `reason_${phase}`)) ? act[`reason_${phase}`] : (act?.reason||""); action = (act && Object.prototype.hasOwnProperty.call(act, `action_${phase}`)) ? act[`action_${phase}`] : (act?.action||""); } if(reason) tooltip += (tooltip? "\n":"") + `Reason: ${reason}`; if(action) tooltip += (tooltip? "\n":"") + `Action: ${action}`; } catch(err){ console.error("Failed to fetch reason:", err); } el.title = tooltip; });
 
+function excelDateToISO(excelDate){
+    if (!excelDate) return "";
+    if (typeof excelDate === "number"){
+        const d = new Date((excelDate - 25569) * 86400 * 1000);
+        return d.toISOString().split("T")[0];
+    }
+    if (typeof excelDate === "string" && excelDate.includes("-")) return excelDate;
+    return "";
+}
+
 async function exportProjectListToExcel(data){
     const rows = data.map(p => ({
         ProjectID: p.id,
@@ -779,14 +789,14 @@ async function handleProjectListImport(file){
                 site: r.Site || "",
                 tpm: r.TPM || "",
                 ee: r.EE || "",
-                gate1: r.Gate1 || "",
-                gate2: r.Gate2 || "",
-                fot: r.FOT || "",
-                er1: r.ER1 || "",
-                er2: r.ER2 || "",
-                er3: r.ER3 || "",
-                pr: r.PR || "",
-                sop: r.SOP || ""
+                gate1: excelDateToISO(r.Gate1),
+                gate2: excelDateToISO(r.Gate2),
+                fot: excelDateToISO(r.FOT),
+                er1: excelDateToISO(r.ER1),
+                er2: excelDateToISO(r.ER2),
+                er3: excelDateToISO(r.ER3),
+                pr: excelDateToISO(r.PR),
+                sop: excelDateToISO(r.SOP),
             });
 
             // update Firebase per project
