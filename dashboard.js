@@ -1,8 +1,3 @@
-// ==============================
-// 🔥 FIREBASE CONNECTION
-// ===============================
-import { db, ref, set, get, update, remove, onValue } from "./firebase-config.js";
-
 // dashboard.js (FINAL + Activity Tab Edition)
 // Updated: Tab-based Activity Detail + preserved modal + full features (status color, hover tooltip, placeholder "--")
 // ===================================================================
@@ -41,17 +36,8 @@ const defaultConfig = {
   type: ["NPI", "KAIZEN&VAVE", "Downtime and Finding"]
 };
 
-let configData = defaultConfig;
-
-// Coba load config dari Firebase saat halaman pertama kali dibuka
-loadConfigFromFirebase().then(cfg => {
-  if (Object.keys(cfg).length > 0) {
-    configData = cfg;
-    console.log("✅ Config loaded from Firebase");
-  } else {
-    console.warn("⚠️ Using default config (no data in Firebase)");
-  }
-});
+let configData = JSON.parse(localStorage.getItem("configData")) || defaultConfig;
+saveConfig();
 
 // mapping untuk nama-nama filter (label kiri)
 const filterTitles = {
@@ -71,10 +57,8 @@ const filterTitles = {
   openSearch: "Search"
 };
 
-// function saveConfig() { localStorage.setItem("configData", JSON.stringify(configData)); }
-function saveConfig() {
-  saveConfigToFirebase(configData);
-}
+function saveConfig() { localStorage.setItem("configData", JSON.stringify(configData)); }
+
 // Utility: escape HTML
 function escapeHtml(str) {
   if (str === undefined || str === null) return "";
@@ -126,7 +110,7 @@ function ensureFilterLabelLeft(el) {
 // GANTT CHART MODULE LOADER
 // ===============================
 function loadGanttModule() {
-  fetch("gantt.html")
+  fetch("modules/gantt/gantt.html")
     .then(res => res.text())
     .then(html => {
       const mainContent = document.getElementById("main-content");
@@ -134,13 +118,13 @@ function loadGanttModule() {
 
       // Load script modul Gantt
       const script = document.createElement("script");
-      script.src = "gantt.js";
+      script.src = "modules/gantt/gantt.js";
       document.body.appendChild(script);
 
       // Load CSS khusus Gantt
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "gantt.css";
+      link.href = "modules/gantt/gantt.css";
       document.head.appendChild(link);
     })
     .catch(err => console.error("Failed to load Gantt module:", err));
@@ -231,7 +215,8 @@ const pages = {
         <tbody></tbody>
       </table>
     </div>`,
-  "Request-list": "<h4>Request List</h4><p>All project documents managed here.</p>",
+
+  "file-list": "<h4>File List</h4><p>All project documents managed here.</p>",
   "open-list-old": "<h4>Open List (legacy)</h4>",
   "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
   "asset-category": "<h4>Asset Category</h4><p>Organize assets by group or functionality.</p>",
@@ -325,8 +310,9 @@ function setActiveTab(pageKey) {
   } else if (pageKey === "system-config") {
     renderConfigTable();
   } else if (pageKey.startsWith("activity-")) {
+    // activity tab render
     const pid = parseInt(pageKey.split("-")[1], 10);
-  renderActivityTableInTab(pid);
+    renderActivityTableInTab(pid);
   }
 }
 
@@ -358,35 +344,7 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
 // PROJECT DATA (saved in localStorage key "projects")
 // schema: [{ title, type, model, site, tpm, ee, gate1...sop }]
 // ===============================
-let projectData = [];
-
-loadProjectsFromFirebase().then(data => {
-  projectData = data || [];
-  renderProjectTable(projectData);
-});
-
-onValue(ref(db, "projects/"), (snapshot) => {
-  if (snapshot.exists()) {
-    projectData = snapshot.val();
-    renderProjectTable(projectData);
-    console.log("🔁 Project data updated in real-time");
-  }
-});
-
-onValue(ref(db, "activities/"), (snapshot) => {
-  if (!snapshot.exists()) return;
-  console.log("🔁 Activities updated in real-time");
-  clearTimeout(window._refreshDelayTimer);
-  window._refreshDelayTimer = setTimeout(() => {
-    const activeTab = document.querySelector(".tab.active");
-    if (activeTab && activeTab.dataset.page.startsWith("activity-")) {
-      const pid = activeTab.dataset.page.split("-")[1];
-      renderActivityTableInTab(pid);
-      setTimeout(() => markDelaysInActivityTable(document), 600);
-    }
-  }, 400);
-});
-
+let projectData = JSON.parse(localStorage.getItem("projects")) || [];
 
 // ===============================
 // HELPERS: select HTML & date cell
@@ -439,7 +397,7 @@ function applyProjectFiltersAndRender() {
   const fee = (document.getElementById("filterEE")?.value || "").trim();
   const fst = (document.getElementById("filterStatus")?.value || "").trim();
 
-  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
   const filtered = projectData.filter(p => {
     let ok = true;
     if (ft && p.type !== ft) ok = false;
@@ -525,7 +483,7 @@ function renderProjectTable(filtered = null) {
   const tbody = document.getElementById("projectBody");
   if (!tbody) return;
   // ensure projectData from storage
-  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
   const rows = (filtered || projectData);
 
   tbody.innerHTML = "";
@@ -560,7 +518,6 @@ function renderProjectTable(filtered = null) {
       // open Activity as TAB (page key: activity-{pid})
       const pageKey = `activity-${i}`;
       openTab(pageKey, `Activity — ${p.title || 'Project'}`);
-      console.log("🧩 Open Activity Tab for project:", i, p.title);
     };
     tr.querySelector(".edit-btn").onclick = () => toggleEditProjectRow(tr, i);
     tr.querySelector(".del-btn").onclick = () => {
@@ -614,10 +571,9 @@ function wrapTd(inner) { return `<td>${inner}</td>`; }
 // ============================================
 // 🔧 Utility: tampilkan '--' untuk tanggal kosong
 // ============================================
-
 function showPlaceholderForEmptyDates(containerSelector = "body") {
   document.querySelectorAll(`${containerSelector} input[type="date"]`).forEach(input => {
-    if (!input.value || input.value === "--") {
+    if (!input.value) {
       input.type = "text"; // ubah agar bisa tampilkan teks biasa
       input.value = "--";
       input.style.textAlign = "center";
@@ -635,8 +591,6 @@ function showPlaceholderForEmptyDates(containerSelector = "body") {
     }
   });
 }
-
-
 
 // ===============================
 // toggle edit row
@@ -666,7 +620,7 @@ function toggleEditProjectRow(row, index) {
 }
 
 function saveProjects() {
-  saveProjectsToFirebase(projectData);
+  localStorage.setItem("projects", JSON.stringify(projectData));
 }
 
 // ===============================
@@ -685,58 +639,6 @@ function attachProjectSearchHandler() {
 // ACTIVITY DETAIL: modal & tab rendering (shared logic)
 // ===============================
 const activityDateFields = ["req","design","quotation","io","prpo","d3","cnc","assembly","eta","debugging","aging","validation","trial","pr","sop"];
-function markDelaysInActivityTable(containerEl = document) {
-  const root = (containerEl && containerEl.querySelector) ? containerEl : document;
-  const rows = root.querySelectorAll("#activityTable tbody tr, #activityTableTab tbody tr");
-
-  rows.forEach(row => {
-    activityDateFields.forEach(k => {
-      const planInput = row.querySelector(`[data-field="plan_${k}"]`);
-      const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
-      if (!planInput) return;
-
-      const planValRaw = planInput.value?.trim() || "";
-      const actualValRaw = actualInput?.value?.trim() || "";
-      const planVal = (planValRaw === "--" || planValRaw === "—") ? "" : planValRaw;
-      const actualVal = (actualValRaw === "--" || actualValRaw === "—") ? "" : actualValRaw;
-
-      [planInput, actualInput].forEach(inp => {
-        if (inp) {
-          inp.style.backgroundColor = "";
-          inp.classList.remove("border-danger");
-        }
-      });
-
-      if (!planVal) return;
-      const planDate = toDateOnly(planVal);
-      const actualDate = actualVal ? toDateOnly(actualVal) : null;
-      const today = toDateOnly(new Date());
-      let color = "";
-      let isDelay = false;
-
-      if (actualDate && actualDate > planDate) {
-        color = "#f8d7da";
-        isDelay = true;
-      } else if (!actualDate && planDate < today) {
-        color = "#f8d7da";
-        isDelay = true;
-      } else if (!actualDate && planDate >= today) {
-        color = "#fff3cd";
-      } else if (actualDate && actualDate <= planDate) {
-        color = "#d1e7dd";
-      }
-
-      [planInput, actualInput].forEach(inp => {
-        if (inp && color) inp.style.backgroundColor = color;
-      });
-
-      if (isDelay) {
-        if (planInput) planInput.classList.add("border-danger");
-        if (actualInput && !actualVal) actualInput.classList.add("border-danger");
-      }
-    });
-  });
-}
 
 // Render activity as modal (backward-compatible)
 function openActivityModal(pid) {
@@ -744,17 +646,7 @@ function openActivityModal(pid) {
   if (!modalEl) return alert("Activity modal not found in HTML.");
   const modal = new bootstrap.Modal(modalEl);
   modalEl.setAttribute("data-pid", pid);
-  // let data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
-  let data = [];
-  loadActivitiesFromFirebase(pid).then(acts => {
-    data = acts || [];
-    render();
-  });
-
-  async function saveAct() {
-    await saveActivitiesToFirebase(pid, data);
-    console.log(`✅ Activity ${pid} saved to Firebase`);
-  }
+  let data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
   const tbody = modalEl.querySelector("#activityTable tbody");
 
   // prepare select options
@@ -821,21 +713,18 @@ function openActivityModal(pid) {
     });
 
     // after render, mark delayed inputs (color background) for plan/actual comparisons
-    // render();
-    showPlaceholderForEmptyDates("#activityTable tbody");
-    markDelaysInActivityTable(modalEl); // ✅ Tambahkan baris ini
-    modal.show();
+    markDelaysInActivityTable(modalEl); // pass element context
   }
 
   // click handlers inside modal tbody
-  tbody.onclick = async (e) => {
+  tbody.onclick = (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const i = parseInt(btn.dataset.i, 10);
     if (btn.classList.contains("del-act")) {
       if (!confirm("Delete activity?")) return;
-      await deleteActivity(pid, data[i].id);
-      render();
+      data.splice(i, 1);
+      saveAct(); render();
       return;
     }
     if (btn.classList.contains("edit-act")) {
@@ -860,11 +749,8 @@ function openActivityModal(pid) {
         obj.level = arr[idx++].value;
         obj.supplier = arr[idx++].value;
 
-        const actId = data[i].id;
-        await saveSingleActivity(pid, actId, {
-          ...data[i],
-          ...obj
-        });
+        data[i] = Object.assign({}, data[i], obj);
+        saveAct();
         render();
         showPlaceholderForEmptyDates("#activityTable tbody");
       }
@@ -873,18 +759,14 @@ function openActivityModal(pid) {
 
   // add / search handlers in modal
   const addBtn = modalEl.querySelector("#addActivityBtn");
-  addBtn.onclick = async () => {
-    const actId = generateActivityId();
-
-    await saveSingleActivity(pid, actId, {
+  addBtn.onclick = () => {
+    data.push({
       activity: "New Task",
       site: siteOpts[0] || "",
       owner: ownerOpts[0] || "",
-      supplier: supplierOpts[0] || "",
-      level: ""
+      supplier: supplierOpts[0] || ""
     });
-
-    render();  // reload table
+    saveAct(); render();
   };
   const searchInput = modalEl.querySelector("#searchActivity");
   searchInput.oninput = () => {
@@ -894,15 +776,8 @@ function openActivityModal(pid) {
     });
   };
 
-  //function saveAct() { localStorage.setItem(`act_${pid}`, JSON.stringify(data)); }
-  async function saveActToFirebase() {
-    try {
-      await saveActivitiesToFirebase(pid, data);
-      console.log(`✅ Activity ${pid} saved to Firebase`);
-    } catch (err) {
-      console.error("❌ Failed saving activities:", err);
-    }
-  }
+  function saveAct() { localStorage.setItem(`act_${pid}`, JSON.stringify(data)); }
+
   render();
   showPlaceholderForEmptyDates("#activityTable tbody");
   modal.show();
@@ -915,105 +790,179 @@ function renderSelectHtml(name, options = [], selected = "") {
   </select>`;
 }
 
-
-
 // mark delayed inputs coloring in activity table (modal or tab)
 // - pass containerEl optional (modalEl or document)
+function markDelaysInActivityTable(containerEl = document) {
+  const root = (containerEl && containerEl.querySelector) ? containerEl : document;
+  const rows = root.querySelectorAll("#activityTable tbody tr, #activityTableTab tbody tr");
+
+  rows.forEach(row => {
+    activityDateFields.forEach(k => {
+      const planInput = row.querySelector(`[data-field="plan_${k}"]`);
+      const actualInput = row.querySelector(`[data-field="actual_${k}"]`);
+      const planVal = planInput ? planInput.value : "";
+      const actualVal = actualInput ? actualInput.value : "";
+
+      // reset warna
+      [planInput, actualInput].forEach(inp => {
+        if (inp) {
+          inp.style.backgroundColor = "";
+          inp.classList.remove("border-danger");
+        }
+      });
+
+      // skip jika tidak ada plan
+      if (!planVal) return;
+
+      const planDate = toDateOnly(planVal);
+      const actualDate = actualVal ? toDateOnly(actualVal) : null;
+      const today = toDateOnly(new Date());
+
+      let color = ""; // default
+      let isDelay = false;
+
+      // Kondisi 1: actual melebihi plan
+      if (actualDate && actualDate > planDate) {
+        color = "#f8d7da"; // merah muda (delay)
+        isDelay = true;
+      }
+      // Kondisi 2: actual kosong dan plan sudah lewat hari ini
+      else if (!actualDate && planDate < today) {
+        color = "#f8d7da"; // merah muda (delay)
+        isDelay = true;
+      }
+      // Kondisi 3: actual kosong tapi belum lewat plan (On Progress)
+      else if (!actualDate && planDate >= today) {
+        color = "#fff3cd"; // kuning muda
+      }
+      // Kondisi 4: actual ada dan ≤ plan (Completed)
+      else if (actualDate && actualDate <= planDate) {
+        color = "#d1e7dd"; // hijau muda
+      }
+
+      // apply warna
+      [planInput, actualInput].forEach(inp => {
+        if (inp && color) inp.style.backgroundColor = color;
+      });
+
+      // tandai border merah kalau delay
+      if (isDelay && planInput) planInput.classList.add("border-danger");
+      if (isDelay && actualInput && !actualVal) actualInput.classList.add("border-danger");
+    });
+
+    // Cek apakah semua actual sudah terisi dan tidak ada delay → hijau semua kolom
+    let allActual = true, anyDelay = false;
+    activityDateFields.forEach(k => {
+      const p = row.querySelector(`[data-field="plan_${k}"]`);
+      const a = row.querySelector(`[data-field="actual_${k}"]`);
+      const pv = p ? p.value : "";
+      const av = a ? a.value : "";
+      if (!av) allActual = false;
+      const delay = computePhaseDelay(pv, av);
+      if (delay !== null && delay > 0) anyDelay = true;
+    });
+    if (allActual && !anyDelay) {
+      activityDateFields.forEach(k => {
+        const p = row.querySelector(`[data-field="plan_${k}"]`);
+        const a = row.querySelector(`[data-field="actual_${k}"]`);
+        [p, a].forEach(inp => {
+          if (inp) inp.style.backgroundColor = "#d1e7dd"; // hijau muda
+        });
+      });
+    }
+  });
+}
+
 // ===============================
-// ✅ FINAL: RENDER Activity in TAB (Full Stable Edition)
+// RENDER Activity in TAB (full page) — new feature
+// pageKey should be "activity-{pid}"
 // ===============================
-async function renderActivityTableInTab(pid) {
+function renderActivityTableInTab(pid) {
   const container = document.getElementById("main-content");
   if (!container) return;
-
-  // Pastikan tabel ada
-  if (!container.querySelector("#activityTableTab")) {
+  // render placeholder (already inserted by setActiveTab) - now populate tbody
+  const tbody = container.querySelector("#activityTableTab tbody");
+  if (!tbody) {
+    // If placeholder not present (older pages), inject full activity placeholder
     container.innerHTML = pages["activity-tab-placeholder"];
   }
-
+  // after ensuring placeholder, re-select
   const tb = document.getElementById("activityTableTab");
   if (!tb) return;
   const tbodyFinal = tb.querySelector("tbody");
   tbodyFinal.innerHTML = "";
+  const data = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
 
-  // 🔥 Ambil data terbaru dari Firebase
-  const data = await loadActivitiesFromFirebase(pid);
-  populateActivityTab(Array.isArray(data) ? data : []);
+  // option pools
+  const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
+  const siteOpts = configData.site || [];
+  const supplierOpts = configData.supplier || [];
 
-  // ===============================
-  // 🧩 Render isi tabel Activity
-  // ===============================
-  function populateActivityTab(data) {
-    const ownerOpts = Array.from(new Set([...(configData.ee || []), ...(configData.tpm || [])]));
-    const siteOpts = configData.site || [];
-    const supplierOpts = configData.supplier || [];
-
-    tbodyFinal.innerHTML = "";
-
-    data.forEach((a, i) => {
-      a.activity = a.activity || "";
-      a.site = a.site || siteOpts[0] || "";
-      a.owner = a.owner || ownerOpts[0] || "";
-      a.level = a.level || "";
-      a.supplier = a.supplier || supplierOpts[0] || "";
-
-      // Pastikan semua field plan dan actual ada
-      activityDateFields.forEach(k => {
-        if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
-        if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
-      });
-
-      const tr = document.createElement("tr");
-      tr.dataset.pid = pid;
-      tr.dataset.i = i;
-
-      tr.innerHTML = `
-        <td class="text-center">${i + 1}</td>
-        <td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>
-        <td>${renderSelectHtml("site", siteOpts, a.site)}</td>
-        <td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>
-        ${activityDateFields.map(k => `
-          <td>
-            <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${a[`plan_${k}`]}" disabled>
-            <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${a[`actual_${k}`]}" disabled>
-          </td>`).join("")}
-        <td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>
-        <td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>
-        <td>
-          <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
-          </div>
-        </td>`;
-      tbodyFinal.appendChild(tr);
+  data.forEach((a, i) => {
+    a.activity = a.activity || "";
+    a.site = a.site || siteOpts[0] || "";
+    a.owner = a.owner || ownerOpts[0] || "";
+    a.level = a.level || "";
+    a.supplier = a.supplier || supplierOpts[0] || "";
+    activityDateFields.forEach(k => {
+      if (a[`plan_${k}`] === undefined) a[`plan_${k}`] = a[k] || "";
+      if (a[`actual_${k}`] === undefined) a[`actual_${k}`] = "";
     });
-  }
 
-  // ===============================
-  // 🧩 Handler Delete & Edit
-  // ===============================
+    // build row
+    const cells = [];
+    cells.push(`<td class="text-center">${i+1}</td>`);
+    cells.push(`<td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td>`);
+    cells.push(`<td>${renderSelectHtml("site", siteOpts, a.site)}</td>`);
+    cells.push(`<td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>`);
+    activityDateFields.forEach(k => {
+      const plan = a[`plan_${k}`] || "";
+      const act = a[`actual_${k}`] || "";
+      cells.push(`<td>
+        <input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${plan}" disabled>
+        <input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${act}" disabled>
+      </td>`);
+    });
+    cells.push(`<td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td>`);
+    cells.push(`<td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td>`);
+    cells.push(`<td>
+      <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button>
+      </div>
+    </td>`);
+
+    const tr = document.createElement("tr");
+    tr.dataset.pid = pid;
+    tr.dataset.i = i;
+    tr.innerHTML = cells.join("");
+    tbodyFinal.appendChild(tr);
+  });
+
+  // attach tab-level handlers (edit/delete/add/search)
   tb.querySelectorAll(".del-act-tab").forEach(b => {
-    b.onclick = async () => {
+    b.onclick = (e) => {
       const idx = parseInt(b.dataset.i, 10);
       if (!confirm("Delete activity?")) return;
-      const acts = await loadActivitiesFromFirebase(pid);
-      await deleteActivity(pid, acts[idx].id);
+      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      acts.splice(idx, 1);
+      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
       renderActivityTableInTab(pid);
     };
   });
 
   tb.querySelectorAll(".edit-act-tab").forEach(b => {
-    b.onclick = async (e) => {
+    b.onclick = (e) => {
       const btn = e.currentTarget;
       const idx = parseInt(btn.dataset.i, 10);
       const row = btn.closest("tr");
       const inputs = row.querySelectorAll("input, select");
       const toggled = btn.classList.toggle("editing");
-
       if (toggled) {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
+        // save
         const arr = Array.from(inputs);
         let p = 0;
         const obj = {};
@@ -1027,78 +976,46 @@ async function renderActivityTableInTab(pid) {
         obj.level = arr[p++].value;
         obj.supplier = arr[p++].value;
 
-        const acts = await loadActivitiesFromFirebase(pid);
-        const actId = acts[idx].id;
-        await saveSingleActivity(pid, actId, {
-            ...acts[idx],
-            ...obj
-        });
+        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+        acts[idx] = Object.assign({}, acts[idx], obj);
+        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
         renderActivityTableInTab(pid);
+        showPlaceholderForEmptyDates("#activityTableTab tbody");
       }
     };
   });
 
-  // ===============================
-  // 🧩 Add Task Global Button
-  // ===============================
-  setTimeout(() => {
-    const addGlobal = document.getElementById("addActivityGlobal");
-    if (!addGlobal) {
-      console.warn("⚠️ Add Task button not found yet — retry next render");
-      return;
-    }
-
-    addGlobal.onclick = async () => {
-      console.log("✅ Add Task clicked for pid:", pid);
-      const acts = await loadActivitiesFromFirebase(pid);
-      const updated = Array.isArray(acts) ? acts : [];
-      
-      addGlobal.onclick = async () => {
-        const actId = generateActivityId();
-
-        await saveSingleActivity(pid, actId, {
-          activity: "New Task",
-          site: configData.site[0] || "",
-          owner: configData.ee[0] || configData.tpm[0] || "",
-          supplier: configData.supplier[0] || "",
-          level: ""
-        });
-
-        renderActivityTableInTab(pid);
-      };
-
-      console.log("✅ Task added successfully, total:", updated.length);
+  // add task global (if button exists)
+  const addGlobal = document.getElementById("addActivityGlobal");
+  if (addGlobal) {
+    addGlobal.onclick = () => {
+      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      acts.push({
+        activity: "New Task",
+        site: siteOpts[0] || "",
+        owner: ownerOpts[0] || "",
+        supplier: supplierOpts[0] || ""
+      });
+      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
       renderActivityTableInTab(pid);
     };
+  }
 
-    // ===============================
-    // 🧩 Render warna Delay & Placeholder
-    // ===============================
-    setTimeout(() => {
-      // 1️⃣ Warnai Delay dulu
-      showPlaceholderForEmptyDates("#activityTableTab tbody");
-
-      // 2️⃣ Baru tampilkan placeholder "--"
-      setTimeout(() => {
-        markDelaysInActivityTable(document);
-        console.log("✅ Delay color applied (after placeholder)");
-      }, 500);
-    }, 300);
-  }, 400);
+  // finalize appearance: mark delays colors
+  markDelaysInActivityTable(document);
+  showPlaceholderForEmptyDates("#activityTableTab tbody");
 }
-
-
 
 // ===============================
 // OPEN LIST: breakdown per-phase
 // Updated: move phaseName into Remarks and avoid duplication
 // Includes filter & search support for Open List
 // ===============================
-async function renderOpenList() {
+function renderOpenList() {
   const tbody = document.getElementById("openListBody");
   if (!tbody) return;
   tbody.innerHTML = "";
-  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
+  projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
 
   // read filter values
   const fType = (document.getElementById("openFilterType")?.value || "").trim();
@@ -1130,14 +1047,13 @@ async function renderOpenList() {
   };
 
   let rows = [];
-  for (let pid = 0; pid < projectData.length; pid++) {
-    const proj = projectData[pid];
+  projectData.forEach((proj, pid) => {
     // apply project-level filters early to skip unnecessary activities
-    if (fType && proj.type !== fType) continue;
-    if (fModel && proj.model !== fModel) continue;
-    if (fSite && proj.site !== fSite) continue;
-    const acts = await loadActivitiesFromFirebase(pid) || [];
+    if (fType && proj.type !== fType) return;
+    if (fModel && proj.model !== fModel) return;
+    if (fSite && proj.site !== fSite) return;
 
+    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     acts.forEach((a, aid) => {
       phaseKeys.forEach(pk => {
         const plan = a[`plan_${pk}`] || "";
@@ -1180,6 +1096,8 @@ async function renderOpenList() {
           remarks: a[`remarks_${pk}`] || a.remarks || ""
         };
 
+       
+
         // apply filters that require row-level knowledge
         if (fTPM) {
           const ownerName = (rowObj.ee || "").toString();
@@ -1201,7 +1119,7 @@ async function renderOpenList() {
         rows.push(rowObj);
       });
     });
-  }
+  });
 
   // render rows
   rows.forEach((r, idx) => {
@@ -1253,7 +1171,7 @@ async function renderOpenList() {
   });
 
   // row click handlers for edit/delete
-  tbody.onclick = async (e) => {
+  tbody.onclick = (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     const tr = btn.closest("tr");
@@ -1265,8 +1183,9 @@ async function renderOpenList() {
 
     if (btn.classList.contains("open-del")) {
       if (!confirm("Delete this activity? This will remove the whole activity for the project.")) return;
-      const acts = await loadActivitiesFromFirebase(pid);
-      await deleteActivity(pid, acts[aid].id);
+      const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
+      acts.splice(aid, 1);
+      localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
       renderOpenList();
       return;
     }
@@ -1278,7 +1197,7 @@ async function renderOpenList() {
         inputs.forEach(x => x.disabled = false);
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
       } else {
-        const acts = await loadActivitiesFromFirebase(pid);
+        const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
         const actObj = acts[aid] || {};
         const phaseKey = phase;
 
@@ -1318,7 +1237,8 @@ async function renderOpenList() {
         if (eeSel) actObj.owner = eeSel.value || actObj.owner;
         if (suppSel) actObj.supplier = suppSel.value || actObj.supplier;
 
-        await saveSingleActivity(pid, acts[aid].id, actObj);
+        acts[aid] = actObj;
+        localStorage.setItem(`act_${pid}`, JSON.stringify(acts));
         renderOpenList();
       }
     }
@@ -1454,7 +1374,7 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // When mouseenter on a plan/actual input, compute delay for that phase and show title tooltip
 // Menampilkan total Delay Days + Reason dari data Open List
 // ===============================
-document.addEventListener("mouseover", async (e) => {
+document.addEventListener("mouseover", (e) => {
   const el = e.target;
   if (!el) return;
   const field = el.getAttribute("data-field");
@@ -1492,7 +1412,7 @@ document.addEventListener("mouseover", async (e) => {
 
   // Ambil reason dari data activity yang tersimpan di localStorage
   try {
-    const acts = await loadActivitiesFromFirebase(pid);
+    const acts = JSON.parse(localStorage.getItem(`act_${pid}`)) || [];
     // ambil index row
     const idx = parseInt(row.dataset.i || row.dataset.aid || row.dataset.row || row.rowIndex, 10);
     const act = acts[idx];
@@ -1523,79 +1443,6 @@ document.addEventListener("mouseover", async (e) => {
 });
 
 // ===============================
-// 🔥 FIREBASE SAVE & LOAD FUNCTIONS
-// ===============================
-async function saveProjectsToFirebase(data) {
-  try {
-    await set(ref(db, "projects/"), data);
-    console.log("✅ Project data saved to Firebase");
-  } catch (error) {
-    console.error("❌ Error saving to Firebase:", error);
-  }
-}
-
-async function loadProjectsFromFirebase() {
-  try {
-    const snapshot = await get(ref(db, "projects/"));
-    if (snapshot.exists()) {
-      console.log("✅ Project data loaded from Firebase");
-      return snapshot.val();
-    } else {
-      console.warn("⚠️ No project data found in Firebase");
-      return [];
-    }
-  } catch (error) {
-    console.error("❌ Error loading from Firebase:", error);
-    return [];
-  }
-}
-
-// Simpan dan load konfigurasi sistem
-async function saveConfigToFirebase(config) {
-  try {
-    await set(ref(db, "config/default"), config);
-    console.log("✅ Config saved to Firebase");
-  } catch (error) {
-    console.error("❌ Error saving config:", error);
-  }
-}
-
-async function loadConfigFromFirebase() {
-  try {
-    const snapshot = await get(ref(db, "config/default"));
-    return snapshot.exists() ? snapshot.val() : {};
-  } catch (error) {
-    console.error("❌ Error loading config:", error);
-    return {};
-  }
-}
-
-function generateActivityId() {
-  return "ACT-" + Date.now() + "-" + Math.floor(Math.random() * 99999);
-}
-
-// Save per ID
-async function saveSingleActivity(pid, actId, actObj) {
-  await set(ref(db, `activities/${pid}/${actId}`), actObj);
-}
-
-// Delete per ID
-async function deleteActivity(pid, actId) {
-  await remove(ref(db, `activities/${pid}/${actId}`));
-}
-
-// Load object then convert to array with id
-async function loadActivitiesFromFirebase(pid) {
-  const snapshot = await get(ref(db, `activities/${pid}`));
-  if (!snapshot.exists()) return [];
-  const obj = snapshot.val();
-  return Object.entries(obj).map(([id, data]) => ({
-    id,
-    ...data
-  }));
-}
-
-// ===============================
 // Utility for external usage
 // ===============================
 window.computePhaseDelay = computePhaseDelay;
@@ -1604,3 +1451,4 @@ window.renderOpenList = renderOpenList;
 window.renderConfigTable = renderConfigTable;
 window.openActivityModal = openActivityModal;
 window.renderActivityTableInTab = renderActivityTableInTab;
+
