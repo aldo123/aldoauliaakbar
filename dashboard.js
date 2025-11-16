@@ -866,9 +866,17 @@ async function importActivityFromExcel(pid, file) {
             };
 
             activityDateFields.forEach(k => {
-                obj[`plan_${k}`] = r[`Plan_${k.toUpperCase()}`] || "";
-                obj[`actual_${k}`] = r[`Actual_${k.toUpperCase()}`] || "";
+                const colPlan = r[`Plan_${k.toUpperCase()}`];
+                const colActual = r[`Actual_${k.toUpperCase()}`];
+
+                obj[`plan_${k}`] = excelDateToISO(colPlan);
+                obj[`actual_${k}`] = excelDateToISO(colActual);
+
+                // jika masih undefined → set ""
+                if (!obj[`plan_${k}`]) obj[`plan_${k}`] = "";
+                if (!obj[`actual_${k}`]) obj[`actual_${k}`] = "";
             });
+
 
             await saveSingleActivity(pid, actId, obj);
         }
