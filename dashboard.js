@@ -1,3 +1,4 @@
+// ==============================
 // 🔥 FIREBASE CONNECTION
 // ===============================
 import { db, ref, set, get, update, remove, onValue } from "./firebase-config.js";
@@ -324,7 +325,7 @@ function setActiveTab(pageKey) {
   } else if (pageKey === "system-config") {
     renderConfigTable();
   } else if (pageKey.startsWith("activity-")) {
-    const pid = parseInt(pageKey.split("-")[1], 10);
+    const pid = pageKey.replace("activity-", "");
   renderActivityTableInTab(pid);
   }
 }
@@ -357,7 +358,7 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
 // PROJECT DATA (saved in localStorage key "projects")
 // schema: [{ title, type, model, site, tpm, ee, gate1...sop }]
 // ===============================
-let projectData = [];
+let projectData = {};
 
 loadProjectsFromFirebase().then(data => {
   projectData = data || [];
@@ -439,7 +440,8 @@ function applyProjectFiltersAndRender() {
   const fst = (document.getElementById("filterStatus")?.value || "").trim();
 
   // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
-  const filtered = projectData.filter(p => {
+  const list = Object.values(projectData);
+  const filtered = list.filter(p => {
     let ok = true;
     if (ft && p.type !== ft) ok = false;
     if (fm && p.model !== fm) ok = false;
@@ -523,22 +525,27 @@ function attachOpenListSearchHandler() {
 function renderProjectTable(filtered = null) {
   const tbody = document.getElementById("projectBody");
   if (!tbody) return;
-  // ensure projectData from storage
-  // projectData = JSON.parse(localStorage.getItem("projects")) || projectData;
-  const rows = (filtered || projectData);
 
+  const rows = filtered || projectData; // OBJECT → {PRJ-xxx: {...}}
   tbody.innerHTML = "";
-  rows.forEach((p, i) => {
+
+  Object.keys(rows).forEach((projectId, idx) => {
+    const p = rows[projectId];
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="text-center">${i + 1}</td>
+      <td class="text-center">${idx + 1}</td>
       <td><input class="form-control form-control-sm project-title" data-field="title" value="${escapeHtml(p.title||"")}" disabled></td>
       ${wrapTd(selectHtml("type", configData.type, p.type))}
       ${wrapTd(selectHtml("model", configData.model, p.model))}
       ${wrapTd(selectHtml("site", configData.site, p.site))}
       ${wrapTd(selectHtml("tpm", configData.tpm, p.tpm))}
       ${wrapTd(selectHtml("ee", configData.ee, p.ee))}
-      <td class="text-center"><button class="btn btn-sm btn-outline-info view-act" data-id="${i}"><i class="bi bi-eye"></i></button></td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-info view-act" data-id="${projectId}">
+          <i class="bi bi-eye"></i>
+        </button>
+      </td>
       ${wrapTd(dateCellHtml("gate1", p.gate1))}
       ${wrapTd(dateCellHtml("gate2", p.gate2))}
       ${wrapTd(dateCellHtml("fot", p.fot))}
@@ -548,60 +555,78 @@ function renderProjectTable(filtered = null) {
       ${wrapTd(dateCellHtml("pr", p.pr))}
       ${wrapTd(dateCellHtml("sop", p.sop))}
       <td class="text-center">
-        <button class="btn btn-sm btn-warning edit-btn"><i class="bi bi-pencil-square"></i></button>
-        <button class="btn btn-sm btn-danger del-btn"><i class="bi bi-trash"></i></button>
+        <button class="btn btn-sm btn-warning edit-btn" data-id="${projectId}">
+          <i class="bi bi-pencil-square"></i>
+        </button>
+        <button class="btn btn-sm btn-danger del-btn" data-id="${projectId}">
+          <i class="bi bi-trash"></i>
+        </button>
       </td>
     `;
     tbody.appendChild(tr);
 
-    // events
+    // =============================
+    // VIEW ACTIVITY
+    // =============================
     tr.querySelector(".view-act").onclick = () => {
-      // open Activity as TAB (page key: activity-{pid})
-      const pageKey = `activity-${i}`;
-      openTab(pageKey, `Activity — ${p.title || 'Project'}`);
-      console.log("🧩 Open Activity Tab for project:", i, p.title);
+      openTab(`activity-${projectId}`, `Activity — ${p.title || "Project"}`);
     };
-    tr.querySelector(".edit-btn").onclick = () => toggleEditProjectRow(tr, i);
-    tr.querySelector(".del-btn").onclick = () => {
-      if (confirm("Delete project and its activities?")) {
-        projectData.splice(i, 1);
-        saveProjects();
-        // refresh using current filters
-        applyProjectFiltersAndRender();
-      }
+
+    // =============================
+    // EDIT PROJECT
+    // =============================
+    tr.querySelector(".edit-btn").onclick = () => {
+      toggleEditProjectRow(tr, projectId);
+    };
+
+    // =============================
+    // DELETE PROJECT
+    // =============================
+    tr.querySelector(".del-btn").onclick = async () => {
+      if (!confirm("Delete this project and ALL its activities?")) return;
+
+      delete projectData[projectId];              // Hapus project
+      await remove(ref(db, "activities/" + projectId)); // Hapus activity
+      saveProjects();                             // Simpan project baru ke Firebase
+
+      applyProjectFiltersAndRender();             // Refresh tabel
     };
   });
 
-  // add task
+  // Coloring date inputs
   const today = new Date();
   tbody.querySelectorAll('input[type="date"]').forEach(input => {
-    if (!input.value) return; // skip kosong
+    if (!input.value) return;
     const dateVal = new Date(input.value);
-    input.style.transition = "background-color 0.3s ease";
     if (dateVal < today) {
-      // Sudah lewat → hijau muda
       input.style.backgroundColor = "#d1e7dd";
       input.style.color = "#0f5132";
       input.style.fontWeight = "600";
     } else {
-      // Belum lewat → kuning muda
       input.style.backgroundColor = "#fff3cd";
       input.style.color = "#664d03";
       input.style.fontWeight = "600";
     }
   });
-  const addBtn = document.getElementById("addTaskBtn");
+
   showPlaceholderForEmptyDates("#projectBody");
+
+  // ===================================
+  // ADD NEW PROJECT
+  // ===================================
+  const addBtn = document.getElementById("addTaskBtn");
   if (addBtn) {
     addBtn.onclick = () => {
-      projectData.push({
+      const projectId = generateProjectId();
+      projectData[projectId] = {
+        id: projectId,
         title: "New Project",
         type: configData.type[0] || "",
         model: configData.model[0] || "",
         site: configData.site[0] || "",
         tpm: configData.tpm[0] || "",
         ee: configData.ee[0] || ""
-      });
+      };
       saveProjects();
       applyProjectFiltersAndRender();
     };
@@ -640,7 +665,7 @@ function showPlaceholderForEmptyDates(containerSelector = "body") {
 // ===============================
 // toggle edit row
 // ===============================
-function toggleEditProjectRow(row, index) {
+function toggleEditProjectRow(row, projectId) {
   const btn = row.querySelector(".edit-btn");
   const editing = btn.classList.toggle("editing");
   const inputs = row.querySelectorAll("input, select");
@@ -657,7 +682,7 @@ function toggleEditProjectRow(row, index) {
       else if (f) obj[f] = inp.value;
     });
     // merge into projectData[index]
-    Object.assign(projectData[index], obj);
+    Object.assign(projectData[projectId], obj);
     saveProjects();
     // refresh with current filters
     applyProjectFiltersAndRender();
@@ -1129,13 +1154,14 @@ async function renderOpenList() {
   };
 
   let rows = [];
-  for (let pid = 0; pid < projectData.length; pid++) {
-    const proj = projectData[pid];
+  for (const projectId of Object.keys(projectData)) {
+    const proj = projectData[projectId];
     // apply project-level filters early to skip unnecessary activities
     if (fType && proj.type !== fType) continue;
     if (fModel && proj.model !== fModel) continue;
     if (fSite && proj.site !== fSite) continue;
-    const acts = await loadActivitiesFromFirebase(pid) || [];
+
+    const acts = await loadActivitiesFromFirebase(projectId) || [];
 
     acts.forEach((a, aid) => {
       phaseKeys.forEach(pk => {
@@ -1158,7 +1184,8 @@ async function renderOpenList() {
         // build a row object
         const start = a.start || a[`start_${pk}`] || "";
         const rowObj = {
-          pid, aid,
+          pid: projectId,
+          aid,
           projectTitle: proj.title || "",
           projectType: proj.type || "",
           activity: a.activity || "",
@@ -1257,7 +1284,7 @@ async function renderOpenList() {
     if (!btn) return;
     const tr = btn.closest("tr");
     if (!tr) return;
-    const pid = parseInt(tr.dataset.pid, 10);
+    const pid = tr.dataset.pid;
     const aid = parseInt(tr.dataset.aid, 10);
     const phase = tr.dataset.phase;
     const phaseNameLocal = (phase && (phaseNames && phaseNames[phase])) ? phaseNames[phase] : (phase || "");
@@ -1410,7 +1437,6 @@ function openConfigModal(key) {
       b.onclick = () => {
         configData[key].splice(parseInt(b.dataset.i, 10), 1);
         saveConfig();
-        render();
         renderConfigTable();
       };
     });
@@ -1538,7 +1564,7 @@ async function loadProjectsFromFirebase() {
     const snapshot = await get(ref(db, "projects/"));
     if (snapshot.exists()) {
       console.log("✅ Project data loaded from Firebase");
-      return snapshot.val();
+      return snapshot.val() || {};
     } else {
       console.warn("⚠️ No project data found in Firebase");
       return [];
@@ -1567,6 +1593,10 @@ async function loadConfigFromFirebase() {
     console.error("❌ Error loading config:", error);
     return {};
   }
+}
+
+function generateProjectId() {
+  return "PRJ-" + Date.now() + "-" + Math.floor(Math.random() * 99999);
 }
 
 function generateActivityId() {
