@@ -389,3 +389,57 @@ input[type="date"].empty-date::before {
 input[type="date"]:not(.empty-date)::before {
   content: none;
 }
+
+/* =========================================================
+   FIX: Nested Menu (Analytical Tools Submenu)
+   ========================================================= */
+
+/* === Fix Analytical Tools agar sama dengan menu lain === */
+
+/* .menu-group {
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+} 
+
+.menu-group:hover {
+  background-color: #0f7a4d;
+}
+
+
+.menu-group::after {
+  content: "▸";
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  transition: transform 0.2s;
+}
+
+.menu-group.active::after {
+  transform: rotate(90deg);
+}
+
+
+.menu-group ul {
+  list-style: none;
+  padding-left: 35px;
+  display: none;
+}
+
+.menu-group.active ul {
+  display: block;
+}
+
+.menu-group ul li {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, padding-left 0.2s;
+}
+
+.menu-group ul li:hover {
+  background-color: #00c896;
+  padding-left: 24px;
+} */

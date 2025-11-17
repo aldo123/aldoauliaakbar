@@ -114,6 +114,30 @@ function loadGanttModule(){
   }).catch(err=>console.error("Failed to load Gantt module:", err));
 }
 
+function loadOEETPMModule() {
+    fetch("oee-tpm.html?ver=" + Date.now())
+      .then(res => res.text())
+      .then(html => {
+         document.getElementById("main-content").innerHTML = html;
+
+         // load CSS
+         const link = document.createElement("link");
+         link.rel = "stylesheet";
+         link.href = "oee-tpm.css?ver=" + Date.now();
+         document.head.appendChild(link);
+
+         // load Chart.js
+         const chart = document.createElement("script");
+         chart.src = "https://cdn.jsdelivr.net/npm/chart.js";
+         chart.onload = () => {
+             const sc = document.createElement("script");
+             sc.src = "oee-tpm.js?ver=" + Date.now();
+             document.body.appendChild(sc);
+         };
+         document.body.appendChild(chart);
+      });
+}
+
 function loadProjectStateModule() {
 
   // bersihkan module lama agar reload fresh
@@ -253,7 +277,10 @@ const pages = {
   "device-category": "<h4>Device Category</h4><p>Device classifications and grouping setup.</p>",
   "device-list": "<h4>Device List</h4><p>List of all machines or devices registered in system.</p>",
   "maintenance-item": "<h4>Maintenance Item</h4><p>Preventive maintenance record library.</p>",
-  "analytical-tools": "<h4>Analytical Tools</h4><p>Statistical and visualization tools for engineering KPIs.</p>",
+  "oee-tpm": "<div id='oeeLoader'></div>",
+  "equipment-downtime": "<h4>Equipment Downtime</h4><p>Downtime analysis per station / per machine.</p>",
+  "equipment-fpy": "<h4>Equipment FPY</h4><p>First Pass Yield analysis for production machines.</p>",
+  "equipment-reject-summary": "<h4>Equipment Reject Summary</h4><p>Reject root-cause and summary overview.</p>",
   "file-list": `<h4>Request List</h4><p>All project documents managed here.</p>`,
   "project-state": `<div id="ganttLoader"><p class="text-muted">Loading project state...</p></div>`,
   "system-config": `
@@ -277,7 +304,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); });
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -296,6 +323,22 @@ function showWelcomePage(){ document.getElementById("main-content").innerHTML = 
 
 // Sidebar handler
 document.querySelectorAll(".menu li[data-page]").forEach(item=>{ item.addEventListener("click", ()=>{ const key=item.getAttribute("data-page"); const title=item.textContent.trim(); openTab(key,title); if (key==="project-state") loadProjectStateModule(); }); });
+// === Dropdown Handler for Analytical Tools ===
+document.querySelectorAll(".menu li[data-page]").forEach(item => {
+    item.addEventListener("click", () => {
+        const key = item.getAttribute("data-page");
+        const title = item.textContent.trim();
+
+        openTab(key, title);
+
+        if (key === "oee-tpm") {
+            loadOEETPMModule();
+        }
+        else if (key === "project-state") {
+            loadProjectStateModule();
+        }
+    });
+});
 
 // ===============================
 // PROJECT DATA (Option 1 storage)
