@@ -115,25 +115,43 @@ function loadGanttModule(){
 }
 
 function loadProjectStateModule() {
-  fetch("project-state.html")
+
+  // bersihkan module lama agar reload fresh
+  const old = document.querySelectorAll("script[data-ps]");
+  old.forEach(s => s.remove());
+
+  fetch("project-state.html?ver=" + Date.now())
     .then(r => r.text())
     .then(html => {
+
       document.getElementById("main-content").innerHTML = html;
 
-      // inject CSS
+      // inject CSS (cache-buster)
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "project-state.css";
+      link.href = "project-state.css?ver=" + Date.now();
       document.head.appendChild(link);
 
-      // inject JS
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = "project-state.js";
-      document.body.appendChild(script);
+      // inject Chart.js (cache-buster)
+      const chart = document.createElement("script");
+      chart.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js";
+      chart.defer = true;
+      chart.setAttribute("data-ps", "1");
+      document.body.appendChild(chart);
+
+      // inject project-state.js (cache-buster)
+      chart.onload = () => {
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = "project-state.js?ver=" + Date.now();
+        script.setAttribute("data-ps", "1");
+        document.body.appendChild(script);
+      };
+
     })
     .catch(err => console.error("Failed loading Project State module:", err));
 }
+
 
 
 // PAGES snippets (unchanged)

@@ -384,3 +384,4 @@ function drawDonutChart(o) {
     infoBox.textContent = `${o.completedTask} Completed / ${o.totalTask} Total Task`;
   }
 }
+
