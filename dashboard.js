@@ -376,14 +376,52 @@ function applyProjectFiltersAndRender(){
 
 // init open list filters
 function initOpenListFilterOptions(){
-  const fill=(id,arr)=>{ const el=document.getElementById(id); if(!el) return; el.innerHTML=`<option value="">All</option>`+arr.map(a=>`<option>${escapeHtml(a)}</option>`).join(""); ensureFilterLabelLeft(el); };
-  fill("openFilterType", configData.type||[]); fill("openFilterModel", configData.model||[]); fill("openFilterSite", configData.site||[]);
-  fill("openFilterTPM", configData.tpm||[]); fill("openFilterEE", configData.ee||[]);
+  const fill=(id,arr)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=`<option value="">All</option>`+
+      arr.map(a=>`<option>${escapeHtml(a)}</option>`).join("");
+    ensureFilterLabelLeft(el);
+  };
+
+  fill("openFilterType", configData.type||[]);
+  fill("openFilterModel", configData.model||[]);
+  fill("openFilterSite", configData.site||[]);
+  fill("openFilterTPM", configData.tpm||[]);
+  fill("openFilterEE", configData.ee||[]);
+
   ensureFilterLabelLeft(document.getElementById("openFilterStatus"));
+
   const openSearchEl=document.getElementById("openSearch");
-  if(openSearchEl){ let lbl=document.getElementById("openSearchLabelLeft"); if(!lbl){ lbl=document.createElement("label"); lbl.id="openSearchLabelLeft"; lbl.className="filter-label-left"; lbl.style.marginRight="8px"; lbl.style.fontWeight="600"; lbl.style.color="#145a32"; lbl.style.fontSize="13px"; lbl.style.whiteSpace="nowrap"; lbl.style.display="inline-block"; insertBefore(lbl, openSearchEl);} lbl.textContent=filterTitles["openSearch"]||"Search"; }
+  if(openSearchEl){
+    let lbl=document.getElementById("openSearchLabelLeft");
+    if(!lbl){
+      lbl=document.createElement("label");
+      lbl.id="openSearchLabelLeft";
+      lbl.className="filter-label-left";
+      lbl.style.marginRight="8px";
+      lbl.style.fontWeight="600";
+      lbl.style.color="#145a32";
+      lbl.style.fontSize="13px";
+      lbl.style.whiteSpace="nowrap";
+      lbl.style.display="inline-block";
+      insertBefore(lbl, openSearchEl);
+    }
+    lbl.textContent=filterTitles["openSearch"]||"Search";
+  }
+
   attachOpenListSearchHandler();
+
+  // ==========================================
+  // DEFAULT: Set Status = Delay, bukan All
+  // ==========================================
+  const statusEl = document.getElementById("openFilterStatus");
+  if (statusEl) {
+    statusEl.value = "Delay";   // default wajib Delay
+  }
+
 }
+
 function attachOpenListSearchHandler(){ const btn=document.getElementById("openBtnSearch"); const refresh=document.getElementById("openRefresh"); const inputs=["openFilterType","openFilterModel","openFilterSite","openFilterTPM","openFilterEE","openFilterStatus","openSearch"]; if(btn) btn.onclick=()=>{ renderOpenList(); }; if(refresh) refresh.onclick=()=>renderOpenList(); inputs.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.onchange=el.oninput=()=>{ ensureFilterLabelLeft(el); renderOpenList(); }; }); }
 
 // renderProjectTable — uses stable project.id (ddmmyyyyhhmmss)
