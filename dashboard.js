@@ -104,15 +104,7 @@ function ensureFilterLabelLeft(el){
   labelEl.textContent = filterTitles[id] || "Filter";
 }
 
-// Gantt loader (unchanged)
-function loadGanttModule(){
-  fetch("gantt.html").then(res=>res.text()).then(html=>{
-    const mainContent = document.getElementById("main-content");
-    mainContent.innerHTML = html;
-    const script = document.createElement("script"); script.src = "gantt.js"; document.body.appendChild(script);
-    const link = document.createElement("link"); link.rel = "stylesheet"; link.href = "gantt.css"; document.head.appendChild(link);
-  }).catch(err=>console.error("Failed to load Gantt module:", err));
-}
+
 
 function loadOEETPMModule() {
     fetch("oee-tpm.html?ver=" + Date.now())
@@ -138,20 +130,6 @@ function loadMESReport() {
          const link = document.createElement("link");
          link.rel = "stylesheet";
          link.href = "equipment-fpy.css?ver=" + Date.now();
-         document.head.appendChild(link);
-      });
-}
-
-function linedashboard() {
-    fetch("line-dashboard.html?ver=" + Date.now())
-      .then(res => res.text())
-      .then(html => {
-         document.getElementById("main-content").innerHTML = html;
-
-         // load CSS
-         const link = document.createElement("link");
-         link.rel = "stylesheet";
-         link.href = "line-dashboard.css?ver=" + Date.now();
          document.head.appendChild(link);
       });
 }
@@ -200,7 +178,6 @@ function loadProjectStateModule() {
 const pages = {
   "project-state": "<div id='projectStateContainer'></div>",
   "npi": "<h4>NPI</h4><p>New Product Introduction tracking dashboard.</p>",
-  "line-dashboard": "<div id='ine-dashboardLoader'></div>",
   "project-list": `
     <h4>Project List</h4>
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
@@ -323,7 +300,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "line-dashboard") linedashboard();});
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -359,10 +336,6 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         else if (key === "equipment-fpy") {
             loadMESReport();
         }
-        else if (key === "line-dashboard") {
-            linedashboard();
-        }
-
 
     });
 });
