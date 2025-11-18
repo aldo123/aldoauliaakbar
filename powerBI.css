@@ -1,0 +1,29 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #f5f7f9;
+}
+
+/* Container mengikuti area content dashboard */
+.powerbi-only-container {
+    width: 100%;
+    height: 100%; /* menyesuaikan navbar + tab */
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* iframe menyatu total dengan halaman */
+.powerbi-full {
+    width: 105%;
+    height: 105%;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* Hilangkan padding bawaan dashboard untuk halaman OEE */
+#main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+}

@@ -104,8 +104,6 @@ function ensureFilterLabelLeft(el){
   labelEl.textContent = filterTitles[id] || "Filter";
 }
 
-
-
 function loadOEETPMModule() {
     fetch("oee-tpm.html?ver=" + Date.now())
       .then(res => res.text())
@@ -115,7 +113,35 @@ function loadOEETPMModule() {
          // load CSS
          const link = document.createElement("link");
          link.rel = "stylesheet";
-         link.href = "oee-tpm.css?ver=" + Date.now();
+         link.href = "powerBI.css?ver=" + Date.now();
+         document.head.appendChild(link);
+      });
+}
+
+function traceabilitysn() {
+    fetch("traceability.html?ver=" + Date.now())
+      .then(res => res.text())
+      .then(html => {
+         document.getElementById("main-content").innerHTML = html;
+
+         // load CSS
+         const link = document.createElement("link");
+         link.rel = "stylesheet";
+         link.href = "powerBI.css?ver=" + Date.now();
+         document.head.appendChild(link);
+      });
+}
+
+function loadRSA() {
+    fetch("equipment-downtime.html?ver=" + Date.now())
+      .then(res => res.text())
+      .then(html => {
+         document.getElementById("main-content").innerHTML = html;
+
+         // load CSS
+         const link = document.createElement("link");
+         link.rel = "stylesheet";
+         link.href = "powerBI.css?ver=" + Date.now();
          document.head.appendChild(link);
       });
 }
@@ -129,7 +155,21 @@ function loadMESReport() {
          // load CSS
          const link = document.createElement("link");
          link.rel = "stylesheet";
-         link.href = "equipment-fpy.css?ver=" + Date.now();
+         link.href = "powerBI.css?ver=" + Date.now();
+         document.head.appendChild(link);
+      });
+}
+
+function loadDefectReport() {
+    fetch("defect.html?ver=" + Date.now())
+      .then(res => res.text())
+      .then(html => {
+         document.getElementById("main-content").innerHTML = html;
+
+         // load CSS
+         const link = document.createElement("link");
+         link.rel = "stylesheet";
+         link.href = "powerBI.css?ver=" + Date.now();
          document.head.appendChild(link);
       });
 }
@@ -272,11 +312,12 @@ const pages = {
   "storage": "<h4>Storage</h4><p>Warehouse and inventory control overview.</p>",
   "device-category": "<h4>Device Category</h4><p>Device classifications and grouping setup.</p>",
   "device-list": "<h4>Device List</h4><p>List of all machines or devices registered in system.</p>",
-  "maintenance-item": "<h4>Maintenance Item</h4><p>Preventive maintenance record library.</p>",
+  "maintenance-plan": "<h4>Maintenance Plan</h4><p>Preventive maintenance record library.</p>",
   "oee-tpm": "<div id='oeeLoader'></div>",
-  "equipment-downtime": "<h4>Equipment Downtime</h4><p>Downtime analysis per station / per machine.</p>",
+  "equipment-downtime": "<div id='RSALoader'></div>",
   "equipment-fpy": "<div id='MESLoader'></div>",
-  "equipment-reject-summary": "<h4>Equipment Reject Summary</h4><p>Reject root-cause and summary overview.</p>",
+  "defect": "<div id='defectLoader'></div>",
+  "traceability": "<div id='traceabilityLoader'></div>",
   "file-list": `<h4>Request List</h4><p>All project documents managed here.</p>`,
   "project-state": `<div id="ganttLoader"><p class="text-muted">Loading project state...</p></div>`,
   "system-config": `
@@ -300,7 +341,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport();});
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA(); if (pageKey === "defect") loadDefectReport();if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -335,6 +376,15 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "equipment-fpy") {
             loadMESReport();
+        }
+        else if (key === "equipment-downtime") {
+            loadRSA();
+        }
+        else if (key === "defect") {
+            loadDefectReport();
+        }
+        else if (key === "traceability") {
+            traceabilitysn();
         }
 
     });
