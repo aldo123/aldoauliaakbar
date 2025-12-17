@@ -174,6 +174,19 @@ function loadPMReport() {
       });
 }
 
+function loadpartlist() {
+  fetch("partlist.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "partlist.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
 function loadDefectReport() {
     fetch("defect.html?ver=" + Date.now())
       .then(res => res.text())
@@ -321,8 +334,8 @@ const pages = {
   "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
   "asset-category": "<h4>Asset Category</h4><p>Organize assets by group or functionality.</p>",
   "device-state": "<h4>Device State</h4><p>Monitor device performance and operation state.</p>",
-  "part-list": "<h4>Part List</h4><p>Registered spare parts and components.</p>",
-  "inout": "<h4>In/Out</h4><p>Log of part transactions (issued and returned).</p>",
+  "part-list": "<div id='partlistLoader'></div>",
+  "inout": "<div id='inoutLoader'></div>",
   "storage": "<h4>Storage</h4><p>Warehouse and inventory control overview.</p>",
   "device-category": "<h4>Device Category</h4><p>Device classifications and grouping setup.</p>",
   "device-list": "<h4>Device List</h4><p>List of all machines or devices registered in system.</p>",
@@ -355,7 +368,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "traceability") traceabilitysn();});
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -402,6 +415,9 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "traceability") {
             traceabilitysn();
+        }
+        else if (key === "part-list") {
+            loadpartlist();
         }
 
     });
@@ -796,8 +812,11 @@ function openActivityModal(pid){
   const addBtn = modalEl.querySelector("#addActivityBtn");
   addBtn.onclick = async ()=>{
     const actId = generateActivityId();
-    await saveSingleActivity(pid, actId, { activity:"New Task", site:siteOpts[0]||"", owner:ownerOpts[0]||"", supplier:supplierOpts[0]||"", level:"" });
+    await saveSingleActivity(pid, actId, { activity:"New Task", site:siteOpts[0]||"", owner:ownerOpts[0]||"", open_pic: ownerOpts[0], supplier:supplierOpts[0]||"", level:"" });
     data = await loadActivitiesFromFirebase(pid); render();
+    phaseKeys.forEach(pk=>{
+      actObj[`open_pic_${pk}`] = actObj.owner;
+    });
   };
 
   const searchInput = modalEl.querySelector("#searchActivity");
@@ -869,14 +888,14 @@ async function renderOpenList(){
         const planDate = plan && plan!=="--" ? toDateOnly(plan) : null;
         const actualDate = actual && actual!=="--" ? toDateOnly(actual) : null;
         let status = "On Progress";
-        if (actualDate && planDate){ if (actualDate>planDate) status="Delay"; else status="Completed"; }
+        if (actualDate && planDate) status="Completed"; 
         else if (!actualDate && planDate && planDate<today) status="Delay";
         else if (!planDate) status="On Progress";
         const start = a.start || a[`start_${pk}`] || "";
         const rowObj = { pid, aid, projectTitle: proj.title||"", projectType: proj.type||"", activity: a.activity||"", model: proj.model||"", start,
-          question: (a.hasOwnProperty(`question_${pk}`))?a[`question_${pk}`]:(a.question||""), reason:(a.hasOwnProperty(`reason_${pk}`))?a[`reason_${pk}`]:(a.reason||""), actionText:(a.hasOwnProperty(`action_${pk}`))?a[`action_${pk}`]:(a.action||""), ee: a.owner||proj.ee||"", supplier: a.supplier||"", phaseKey: pk, phaseName: phaseNames[pk]||pk, plan, actual, delay, status, file: a[`file_${pk}`]||a.file||"", remarks: a[`remarks_${pk}`]||a.remarks||"" };
+          question: (a.hasOwnProperty(`question_${pk}`))?a[`question_${pk}`]:(a.question||""), reason:(a.hasOwnProperty(`reason_${pk}`))?a[`reason_${pk}`]:(a.reason||""), actionText:(a.hasOwnProperty(`action_${pk}`))?a[`action_${pk}`]:(a.action||""), open_pic: a[`open_pic_${pk}`] || a.owner || proj.ee || "", supplier: a.supplier||"", phaseKey: pk, phaseName: phaseNames[pk]||pk, plan, actual, delay, status, file: a[`file_${pk}`]||a.file||"", remarks: a[`remarks_${pk}`]||a.remarks||"" };
         if (fTPM){ const ownerName = (rowObj.ee||"").toString(); if(ownerName!==fTPM) return; }
-        if (fEE){ const eeName = (rowObj.ee||"").toString(); if(eeName!==fEE) return; }
+        if (fEE && rowObj.open_pic !== fEE) return;
         if (fStatus){ if(rowObj.status!==fStatus) return; }
         if (fSearch){ const hay = `${rowObj.projectTitle} ${rowObj.projectType} ${rowObj.activity} ${rowObj.model} ${rowObj.phaseName} ${rowObj.question} ${rowObj.reason} ${rowObj.remarks}`.toLowerCase(); if(!hay.includes(fSearch)) return; }
         rows.push(rowObj);
@@ -890,15 +909,16 @@ async function renderOpenList(){
     const tr = document.createElement("tr"); tr.dataset.pid = r.pid; tr.dataset.aid = r.aid; tr.dataset.phase = r.phaseKey;
     const existingRemark = (r.remarks||"").trim(); let remarksVal = "";
     if (existingRemark){ const escPN = (r.phaseName||"").replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); const startsWithPhase = escPN && new RegExp('^'+escPN,'i').test(existingRemark); remarksVal = startsWithPhase ? existingRemark : `${r.phaseName} - ${existingRemark}`; } else remarksVal = r.phaseName || "";
-    tr.innerHTML = `<td class="text-center">${idx+1}</td><td>${escapeHtml(r.projectTitle)}</td><td>${escapeHtml(r.projectType)}</td><td>${escapeHtml(r.activity)}</td><td>${escapeHtml(r.model)}</td><td><input class="form-control form-control-sm" data-field="question" value="${escapeHtml(r.question)}" disabled></td><td><input class="form-control form-control-sm" data-field="reason" value="${escapeHtml(r.reason)}" disabled></td><td><input class="form-control form-control-sm" data-field="actionText" value="${escapeHtml(r.actionText)}" disabled></td><td>${selectHtml("ee", configData.ee||[], r.ee)}</td><td>${selectHtml("supplier", configData.supplier||[], r.supplier)}</td><td><input type="date" class="form-control form-control-sm" data-field="start_time" value="${r.start||""}" disabled></td><td><input type="date" class="form-control form-control-sm mt-1" data-field="plan_time" value="${r.plan||""}" disabled></td><td><input type="date" class="form-control form-control-sm" data-field="actual_time" value="${r.actual||""}" disabled></td><td class="text-center">${delayCell}</td><td class="text-center">${statusHtml}</td><td><input class="form-control form-control-sm" data-field="file" value="${escapeHtml(r.file)}" disabled></td><td><input class="form-control form-control-sm" data-field="remarks" value="${escapeHtml(remarksVal)}" disabled></td><td class="text-center"><button class="btn btn-sm btn-warning open-edit" data-row="${idx}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm btn-danger open-del" data-row="${idx}"><i class="bi bi-trash"></i></button></td>`;
+    //tr.innerHTML = `<td class="text-center">${idx+1}</td><td>${escapeHtml(r.projectTitle)}</td><td>${escapeHtml(r.projectType)}</td><td>${escapeHtml(r.activity)}</td><td>${escapeHtml(r.model)}</td><td><input class="form-control form-control-sm" data-field="question" value="${escapeHtml(r.question)}" disabled></td><td><input class="form-control form-control-sm" data-field="reason" value="${escapeHtml(r.reason)}" disabled></td><td><input class="form-control form-control-sm" data-field="actionText" value="${escapeHtml(r.actionText)}" disabled></td><td>${selectHtml("open_pic", configData.ee||[], r.open_pic)}</td><td>${selectHtml("supplier", configData.supplier||[], r.supplier)}</td><td><input type="date" class="form-control form-control-sm" data-field="start_time" value="${r.start||""}" disabled></td><td><input type="date" class="form-control form-control-sm mt-1" data-field="plan_time" value="${r.plan||""}" disabled></td><td><input type="date" class="form-control form-control-sm" data-field="actual_time" value="${r.actual||""}" disabled></td><td class="text-center">${delayCell}</td><td class="text-center">${statusHtml}</td><td><input class="form-control form-control-sm" data-field="file" value="${escapeHtml(r.file)}" disabled></td><td><input class="form-control form-control-sm" data-field="remarks" value="${escapeHtml(remarksVal)}" disabled></td><td class="text-center"><button class="btn btn-sm btn-warning open-edit" data-row="${idx}"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-danger open-del" data-row="${idx}"><i class="bi bi-trash"></i></button></td>`;
+    tr.innerHTML = `<td class="text-center">${idx+1}</td><td>${escapeHtml(r.projectTitle)}</td><td>${escapeHtml(r.projectType)}</td><td>${escapeHtml(r.activity)}</td><td>${escapeHtml(r.model)}</td><td><input class="form-control form-control-sm" data-field="question" value="${escapeHtml(r.question)}" disabled></td><td><input class="form-control form-control-sm" data-field="reason" value="${escapeHtml(r.reason)}" disabled></td><td><input class="form-control form-control-sm" data-field="actionText" value="${escapeHtml(r.actionText)}" disabled></td><td>${selectHtml("open_pic", configData.ee||[], r.open_pic)}</td><td>${selectHtml("supplier", configData.supplier||[], r.supplier)}</td><td><input type="date" class="form-control form-control-sm" data-field="start_time" value="${r.start||""}" disabled></td><td><input type="date" class="form-control form-control-sm mt-1" data-field="plan_time" value="${r.plan||""}" disabled></td><td><input type="date" class="form-control form-control-sm" data-field="actual_time" value="${r.actual||""}" disabled></td><td class="text-center">${delayCell}</td><td class="text-center">${statusHtml}</td><td><input class="form-control form-control-sm" data-field="file" value="${escapeHtml(r.file)}" disabled></td><td><input class="form-control form-control-sm" data-field="remarks" value="${escapeHtml(remarksVal)}" disabled></td><td class="text-center"><button class="btn btn-sm btn-warning open-edit" data-row="${idx}"><i class="bi bi-pencil-square"></i></button>`;
     tbody.appendChild(tr);
   });
 
   tbody.onclick = async (e)=>{
     const btn = e.target.closest("button"); if(!btn) return; const tr = btn.closest("tr"); if(!tr) return;
     const pid = tr.dataset.pid; const aid = parseInt(tr.dataset.aid,10); const phase = tr.dataset.phase; const phaseNameLocal = (phase && (phaseNames && phaseNames[phase])) ? phaseNames[phase] : (phase||"");
-    if (btn.classList.contains("open-del")){ if(!confirm("Delete this activity? This will remove the whole activity for the project.")) return; const acts = await loadActivitiesFromFirebase(pid); await deleteActivity(pid, acts[aid].id); renderOpenList(); return; }
-    if (btn.classList.contains("open-edit")){ const inputs = tr.querySelectorAll("input, select"); const editing = btn.classList.toggle("editing"); if(editing){ inputs.forEach(x=>x.disabled=false); btn.innerHTML='<i class="bi bi-check-lg"></i>'; } else { const acts = await loadActivitiesFromFirebase(pid); const actObj = acts[aid]||{}; const phaseKey = phase; const startInp = tr.querySelector('[data-field="start_time"]'); const planInp = tr.querySelector('[data-field="plan_time"]'); const actualInp = tr.querySelector('[data-field="actual_time"]'); const eeSel = tr.querySelector('[data-field="ee"]'); const suppSel = tr.querySelector('[data-field="supplier"]'); const questionInp = tr.querySelector('[data-field="question"]'); const reasonInp = tr.querySelector('[data-field="reason"]'); const actionInp = tr.querySelector('[data-field="actionText"]'); const fileInp = tr.querySelector('[data-field="file"]'); const remarksInp = tr.querySelector('[data-field="remarks"]'); if(startInp) actObj.start = startInp.value || ""; if(planInp) actObj[`plan_${phaseKey}`] = planInp.value || ""; if(actualInp) actObj[`actual_${phaseKey}`] = actualInp.value || ""; if(questionInp) actObj[`question_${phaseKey}`] = questionInp.value===""? "": questionInp.value; if(reasonInp) actObj[`reason_${phaseKey}`] = reasonInp.value===""? "": reasonInp.value; if(actionInp) actObj[`action_${phaseKey}`] = actionInp.value===""? "": actionInp.value; if(fileInp) actObj[`file_${phaseKey}`] = fileInp.value; if(remarksInp){ let val = (remarksInp.value||"").trim(); if(phaseNameLocal){ const esc = phaseNameLocal.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); val = val.replace(new RegExp('^(?:'+esc+'\\s*-?\\s*)+','i'),''); val = val.trim(); } actObj[`remarks_${phaseKey}`] = val; } if(eeSel) actObj.owner = eeSel.value || actObj.owner; if(suppSel) actObj.supplier = suppSel.value || actObj.supplier; await saveSingleActivity(pid, acts[aid].id, actObj); renderOpenList(); } }
+    //if (btn.classList.contains("open-del")){ if(!confirm("Delete this activity? This will remove the whole activity for the project.")) return; const acts = await loadActivitiesFromFirebase(pid); await deleteActivity(pid, acts[aid].id); renderOpenList(); return; }
+    if (btn.classList.contains("open-edit")){ const inputs = tr.querySelectorAll("input, select"); const editing = btn.classList.toggle("editing"); if(editing){ inputs.forEach(x=>x.disabled=false); btn.innerHTML='<i class="bi bi-check-lg"></i>'; } else { const acts = await loadActivitiesFromFirebase(pid); const actObj = acts[aid]||{}; const phaseKey = phase; const startInp = tr.querySelector('[data-field="start_time"]'); const planInp = tr.querySelector('[data-field="plan_time"]'); const actualInp = tr.querySelector('[data-field="actual_time"]'); const eeSel = tr.querySelector('[data-field="open_pic"]'); const suppSel = tr.querySelector('[data-field="supplier"]'); const questionInp = tr.querySelector('[data-field="question"]'); const reasonInp = tr.querySelector('[data-field="reason"]'); const actionInp = tr.querySelector('[data-field="actionText"]'); const fileInp = tr.querySelector('[data-field="file"]'); const remarksInp = tr.querySelector('[data-field="remarks"]'); if(startInp) actObj.start = startInp.value || ""; if(planInp) actObj[`plan_${phaseKey}`] = planInp.value || ""; if(actualInp) actObj[`actual_${phaseKey}`] = actualInp.value || ""; if(questionInp) actObj[`question_${phaseKey}`] = questionInp.value===""? "": questionInp.value; if(reasonInp) actObj[`reason_${phaseKey}`] = reasonInp.value===""? "": reasonInp.value; if(actionInp) actObj[`action_${phaseKey}`] = actionInp.value===""? "": actionInp.value; if(fileInp) actObj[`file_${phaseKey}`] = fileInp.value; if(remarksInp){ let val = (remarksInp.value||"").trim(); if(phaseNameLocal){ const esc = phaseNameLocal.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); val = val.replace(new RegExp('^(?:'+esc+'\\s*-?\\s*)+','i'),''); val = val.trim(); } actObj[`remarks_${phaseKey}`] = val; } if (eeSel) actObj[`open_pic_${phaseKey}`] = eeSel.value; if(suppSel) actObj.supplier = suppSel.value || actObj.supplier; await saveSingleActivity(pid, acts[aid].id, actObj); renderOpenList(); } }
   };
   showPlaceholderForEmptyDates("#openListBody");
 }
