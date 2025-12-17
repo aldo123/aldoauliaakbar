@@ -9,6 +9,7 @@ import { db, ref, set, remove, onValue } from "./firebase-config.js";
 // GLOBAL STATE
 // -------------------------------
 let partData = [];
+let editingPartId = null;
 
 // -------------------------------
 // INIT
@@ -33,9 +34,13 @@ function initPartList() {
 
   // ADD PART
   addBtn.onclick = () => {
-    console.log("➕ Add Part clicked");
-    openAddPartModal();
-  };
+  editingPartId = null;
+
+  document.querySelectorAll("#addPartModal input")
+    .forEach(i => i.value = "");
+
+  openAddPartModal();};
+
 
   // 🔥 IMPORT BUTTON (INI YANG HILANG)
   importBtn.onclick = () => {
@@ -92,6 +97,10 @@ function renderPartTable() {
         ${p.status || "Active"}
       </td>
       <td>
+        <button class="btn btn-sm btn-outline-primary part-edit-btn"
+                data-id="${p.id}">
+            Edit
+        </button>
         <button class="btn btn-sm btn-outline-danger part-delete-btn"
                 data-id="${p.id}">
           Delete
@@ -115,6 +124,30 @@ document.addEventListener("click", async (e) => {
   if (confirm("Delete this part?")) {
     await remove(ref(db, `parts/${partId}`));
   }
+});
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".part-edit-btn");
+  if (!btn) return;
+
+  const partId = btn.dataset.id;
+  const part = partData.find(p => p.id === partId);
+  if (!part) return;
+
+  editingPartId = partId;
+
+  // isi form
+  document.getElementById("partCode").value = part.code || "";
+  document.getElementById("partName").value = part.name || "";
+  document.getElementById("partCategory").value = part.category || "";
+  document.getElementById("partSub").value = part.sub || "";
+  document.getElementById("partMachine").value = part.machine || "";
+  document.getElementById("partSpec").value = part.spec || "";
+  document.getElementById("partSupplier").value = part.supplier || "";
+  document.getElementById("partUnit").value = part.unit || "";
+
+  // buka modal
+  openAddPartModal();
 });
 
 // -------------------------------
@@ -269,10 +302,10 @@ document.getElementById("btnSavePart")?.addEventListener("click", async () => {
     name: document.getElementById("partName").value.trim(),
     category: document.getElementById("partCategory").value.trim(),
     sub: document.getElementById("partSub").value.trim(),
-    unit: document.getElementById("partUnit").value.trim(),
     machine: document.getElementById("partMachine").value.trim(),
-    supplier: document.getElementById("partSupplier").value.trim(),
     spec: document.getElementById("partSpec").value.trim(),
+    supplier: document.getElementById("partSupplier").value.trim(),
+    unit: document.getElementById("partUnit").value.trim(),
     status: "Active"
   };
 
@@ -281,10 +314,34 @@ document.getElementById("btnSavePart")?.addEventListener("click", async () => {
     return;
   }
 
-  await saveNewPart(part);
+  // =========================
+  // MODE EDIT
+  // =========================
+  if (editingPartId) {
+    await set(ref(db, `parts/${editingPartId}`), {
+      ...part,
+      updatedAt: Date.now()
+    });
+  }
+  // =========================
+  // MODE ADD
+  // =========================
+  else {
+    const partId = "PART-" + Date.now();
+    await set(ref(db, `parts/${partId}`), {
+      ...part,
+      createdAt: Date.now()
+    });
+  }
+
+  editingPartId = null;
+
+  // reset form
+  document.querySelectorAll("#addPartModal input").forEach(i => i.value = "");
 
   bootstrap.Modal.getInstance(
     document.getElementById("addPartModal")
   ).hide();
 });
+
 
