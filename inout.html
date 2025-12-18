@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SPM In / Out</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="inout.css" />
+</head>
+
+
+
+<body>
+
+<div class="spm-wrapper">
+
+  <!-- HEADER -->
+  <div class="spm-header">
+    <h3>Spare Part Management</h3>
+    <div class="spm-actions">
+      <span class="user">LiaoAlan</span>
+      <button class="btn btn-outline-light btn-sm">Logout</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+<div class="row g-4 mb-4 spm-summary">
+
+  <!-- Incoming -->
+  <div class="col-md-3">
+    <div class="spm-card incoming">
+      <div class="spm-icon">
+        <i class="bi bi-box-arrow-in-down"></i>
+      </div>
+      <div class="spm-info">
+        <h6>Incoming</h6>
+        <h2><span id="incomingValue">0</span> <small>pcs</small></h2>
+        <span class="sub">Today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing -->
+  <div class="col-md-3">
+    <div class="spm-card outgoing">
+      <div class="spm-icon">
+        <i class="bi bi-box-arrow-up"></i>
+      </div>
+      <div class="spm-info">
+        <h6>Outgoing</h6>
+        <h2><span id="outgoingValue">0</span> <small>pcs</small></h2>
+        <span class="sub">Today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock -->
+  <div class="col-md-3">
+    <div class="spm-card lowstock">
+      <div class="spm-icon">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <div class="spm-info">
+        <h6>Low Stock</h6>
+        <h2><span id="lowStockCount">0</span> <small>Items</small></h2>
+        <span class="sub">Below Min Qty</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total SKU -->
+  <div class="col-md-3">
+    <div class="spm-card totalsku">
+      <div class="spm-icon">
+        <i class="bi bi-collection"></i>
+      </div>
+      <div class="spm-info">
+        <h6>Total SKU</h6>
+        <h2><span id="totalSkuValue">0</span> <small>Items</small></h2>
+        <span class="sub">Registered Parts</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+  <!-- IN / OUT BUTTONS -->
+  <div class="inout-actions mb-4">
+    <button class="btn btn-in" id="btnIn">IN</button>
+    <button class="btn btn-out" id="btnOut">OUT</button>
+  </div>
+
+  <!-- TRANSACTION LOG -->
+  <div class="card table-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Transaction Log</h5>
+
+      <div class="d-flex gap-2 align-items-center">
+        <input
+          class="form-control form-control-sm"
+          id="searchLog"
+          placeholder="Search"
+          style="width:200px"
+        />
+
+        <!-- DELETE BUTTON -->
+        <button
+          class="btn btn-sm btn-danger"
+          id="deleteAllTransaction"
+          title="Delete all transaction logs"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Date & Time</th>
+            <th>Part Name</th>
+            <th>IN/OUT</th>
+            <th>Quantity</th>
+            <th>PIC</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 🔥 IMPORTANT: MODULE -->
+<script type="module" src="inout.js"></script>
+
+<!-- ===========================
+     OUT ISSUE PANEL
+=========================== -->
+<div id="outPanelBackdrop" class="out-backdrop"></div>
+
+<div id="outPanel" class="out-panel">
+  <div class="out-header">
+    <h5>Issue Spare Parts</h5>
+    <button id="closeOutPanel">✕</button>
+  </div>
+
+  <div class="out-body">
+
+    <!-- SEARCH PART -->
+    <label>Search Part (Name / Code)</label>
+    <div class="position-relative">
+      <input
+        type="text"
+        id="outSearch"
+        class="form-control"
+        placeholder="Type part name or code..."
+        autocomplete="off"
+      />
+      <div id="outSearchList" class="search-dropdown"></div>
+    </div>
+
+    <label>Part Code</label>
+    <input type="text" id="outPartCode" disabled />
+
+    <label>Part Name</label>
+    <input type="text" id="outPartName" disabled />
+
+    <hr />
+
+    <!-- QTY OUT -->
+    <label>Qty Out</label>
+    <input type="number" id="outQty" min="1" value="1" />
+
+    <!-- MANUAL INPUT -->
+    <label>Machine</label>
+    <input type="text" id="outMachine" placeholder="e.g FCT GAIA" />
+
+    <label>Reason</label>
+    <input type="text" id="outReason" placeholder="e.g Breakdown / Trial" />
+
+    <label>Taken By</label>
+    <input type="text" id="outTakenBy" placeholder="Operator name" />
+
+    <button class="submit-out" id="submitOut">✔ Submit</button>
+
+  </div>
+</div>
+
+
+
+<!-- ===========================
+     IN TOP UP PANEL
+=========================== -->
+<div id="inPanelBackdrop" class="out-backdrop"></div>
+
+<div id="inPanel" class="out-panel">
+  <div class="out-header bg-success">
+    <h5>Top Up Spare Part (IN)</h5>
+    <button id="closeInPanel">✕</button>
+  </div>
+
+  <div class="out-body">
+
+    <label>Search Part (Name / Code)</label>
+    <div class="position-relative">
+      <input
+        type="text"
+        id="inSearch"
+        class="form-control"
+        placeholder="Type part name or code..."
+        autocomplete="off"
+      />
+
+      <!-- 🔽 DROPDOWN -->
+      <div id="partResultList" class="search-dropdown"></div>
+    </div>
+
+    <label>Part Code</label>
+    <input type="text" id="inPartCode" disabled />
+
+    <label>Category</label>
+    <input type="text" id="inCategory" disabled />
+
+    <label>Sub Category</label>
+    <input type="text" id="inSubCategory" disabled />
+
+    <label>Machine</label>
+    <input type="text" id="inMachine" disabled />
+
+    <label>Specification</label>
+    <input type="text" id="inSpec" disabled />
+
+    <hr />
+
+    <label>Qty IN</label>
+    <input type="number" id="inQty" min="1" value="1" />
+
+    <label>Rack Number</label>
+    <input type="text" id="inRack" placeholder="R1 / R2 ..." />
+
+    <label>Row Number</label>
+    <input type="text" id="inRow" placeholder="A / B / C" />
+
+    <label>Minimum Stock</label>
+    <input type="number" id="inMinStock" min="1" />
+
+    <button class="submit-out bg-success" id="submitIn">✔ Save IN</button>
+
+  </div>
+</div>
+
+
+
+
+
+
+</body>
+</html>
+

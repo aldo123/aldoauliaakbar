@@ -1,0 +1,124 @@
+body {
+  background: radial-gradient(circle at top, #1f3d32, #0d1f1a);
+  font-family: "Segoe UI", sans-serif;
+  color: #fff;
+}
+
+/* WRAPPER */
+.storage-wrapper {
+  padding: 20px;
+}
+
+/* HEADER */
+.storage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.storage-header h4 {
+  font-weight: 700;
+  color: #a7f3d0;
+}
+
+.search-input {
+  width: 260px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+/* TABLE */
+.storage-table {
+  background: rgb(255, 255, 255);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.storage-table thead th {
+  background: #064e3b;
+  color: #ecfdf5;
+  font-size: 13px;
+  text-transform: uppercase;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 2px solid #10b981;
+}
+
+.storage-table tbody td {
+  text-align: center;
+  font-size: 13px;
+  background: rgba(255, 250, 250, 0.35);
+}
+
+/* ROW HOVER */
+.storage-table tbody tr:hover {
+  background: rgba(16,185,129,0.15);
+}
+
+/* LOW STOCK */
+.low-stock {
+  background: rgba(220,38,38,0.35) !important;
+  color: #fee2e2;
+  font-weight: 600;
+}
+
+/* STATUS BADGE */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.status-ok {
+  background: rgba(34,197,94,0.25);
+  color: #045f22;
+  border: 1px solid #22c55e;
+}
+
+.status-low {
+  background: rgba(239,68,68,0.3);
+  color: #800505;
+  border: 1px solid #ef4444;
+}
+
+/* LOW STOCK ROW HIGHLIGHT */
+.low-stock {
+  background: rgba(220,38,38,0.35) !important;
+}
+
+/* ACTION ICONS */
+.action-cell {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: scale(1.2);
+  opacity: 0.85;
+}
+
+.edit-btn {
+  color: #22c55e;
+}
+
+.delete-btn {
+  color: #ef4444;
+}

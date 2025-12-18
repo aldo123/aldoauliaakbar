@@ -187,6 +187,42 @@ function loadpartlist() {
     });
 }
 
+function loadstorage() {
+  fetch("storage.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "storage.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
+function loadInOut() {
+  fetch("inout.html")
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      // CSS
+      if (!document.getElementById("inout-css")) {
+        const link = document.createElement("link");
+        link.id = "inout-css";
+        link.rel = "stylesheet";
+        link.href = "inout.css";
+        document.head.appendChild(link);
+      }
+
+      // JS (MODULE)
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "inout.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
 function loadDefectReport() {
     fetch("defect.html?ver=" + Date.now())
       .then(res => res.text())
@@ -336,7 +372,7 @@ const pages = {
   "device-state": "<h4>Device State</h4><p>Monitor device performance and operation state.</p>",
   "part-list": "<div id='partlistLoader'></div>",
   "inout": "<div id='inoutLoader'></div>",
-  "storage": "<h4>Storage</h4><p>Warehouse and inventory control overview.</p>",
+  "storage": "<div id='storageLoader'></div>",
   "device-category": "<h4>Device Category</h4><p>Device classifications and grouping setup.</p>",
   "device-list": "<h4>Device List</h4><p>List of all machines or devices registered in system.</p>",
   "maintenance-plan": "<div id='maintenance-planLoader'></div>",
@@ -368,7 +404,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "traceability") traceabilitysn();});
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "inout") loadInOut();if (pageKey === "storage") loadstorage();if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -418,6 +454,12 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "part-list") {
             loadpartlist();
+        }
+        else if (key === "inout") {
+            loadInOut();
+        }
+        else if (key === "storage") {
+            loadstorage();
         }
 
     });

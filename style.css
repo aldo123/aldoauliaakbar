@@ -139,44 +139,42 @@ footer {
 /* =========================================================
    TAB CONTAINER
    ========================================================= */
-.tab-container {
-  background-color: #fff;
-  border-bottom: 2px solid #ddd;
-  display: flex;
-  gap: 8px;
-  padding: 8px 12px;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
 .tab {
-  padding: 6px 12px;
+  background: #e9f5ee;          /* abu kehijauan */
+  color: #145a32;               /* hijau gelap */
+  padding: 6px 14px;
   border-radius: 6px 6px 0 0;
-  border: 1px solid #ccc;
-  border-bottom: none;
-  background-color: #f8f9fa;
-  font-size: 14px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tab.active {
-  background-color: #e8f5e9;
-  font-weight: 600;
-  color: #145a32;
-  border-color: #00c896;
-}
-
-.tab .close-tab {
   font-size: 13px;
-  color: #888;
-  margin-left: 8px;
+  font-weight: 600;
+  border: 1px solid #cce3d4;
   cursor: pointer;
+  opacity: 1;                   /* PENTING */
+}
+
+/* ACTIVE TAB */
+.tab.active {
+  background: #198754;          /* Bootstrap success */
+  color: #ffffff;
+  border-bottom: 1px solid #198754;
+}
+
+/* HOVER */
+.tab:hover {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+/* CLOSE BUTTON */
+.tab .close-tab {
+  margin-left: 8px;
+  color: inherit;
+  font-weight: bold;
+  opacity: 0.6;
 }
 
 .tab .close-tab:hover {
-  color: red;
+  opacity: 1;
+  color: #dc3545;
 }
 
 /* =========================================================
