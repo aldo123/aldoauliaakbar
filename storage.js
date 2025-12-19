@@ -7,6 +7,11 @@ const editModal = new bootstrap.Modal(
 const editPartCodeView = document.getElementById("editPartCodeView");
 const editMinStockInput = document.getElementById("editMinStock");
 const saveMinStockBtn = document.getElementById("saveMinStock");
+const filterCategory    = document.getElementById("filterCategory");
+const filterSubCategory = document.getElementById("filterSubCategory");
+const filterMachine     = document.getElementById("filterMachine");
+const filterRack        = document.getElementById("filterRack");
+const filterStatus      = document.getElementById("filterStatus");
 
 let editingStorageKey = null;
 
@@ -77,12 +82,28 @@ searchInput?.addEventListener("input", () => {
 function renderTable(data) {
   tbody.innerHTML = "";
 
+  // 🔽 isi filter dropdown dari data
+  fillFilter(filterCategory, data.map(d => partMap[d.partCode]?.category));
+  fillFilter(filterSubCategory, data.map(d => partMap[d.partCode]?.sub));
+  fillFilter(filterMachine, data.map(d => partMap[d.partCode]?.machine));
+  fillFilter(filterRack, data.map(d => d.rack));
+
   data.forEach(s => {
     const part = partMap[s.partCode] || {};
 
     const stock = Number(s.stock || 0);
     const min   = Number(s.minStock || 0);
     const isLow = stock < min;
+
+    // 🔥 FILTER LOGIC
+    if (filterCategory.value && part.category !== filterCategory.value) return;
+    if (filterSubCategory.value && part.sub !== filterSubCategory.value) return;
+    if (filterMachine.value && part.machine !== filterMachine.value) return;
+    if (filterRack.value && s.rack !== filterRack.value) return;
+    if (filterStatus.value) {
+      if (filterStatus.value === "LOW" && !isLow) return;
+      if (filterStatus.value === "NORMAL" && isLow) return;
+    }
 
     const tr = document.createElement("tr");
     if (isLow) tr.classList.add("low-stock");
@@ -104,28 +125,24 @@ function renderTable(data) {
         </span>
       </td>
       <td class="action-cell">
-        <button class="icon-btn edit-btn">✏️</button>
-        <button class="icon-btn delete-btn">🗑️</button>
+        <button class="icon-btn edit-btn" data-key="${s.key}">✏️</button>
+        <button class="icon-btn delete-btn" data-key="${s.key}">🗑️</button>
       </td>
     `;
-
-    // ✅ EDIT
-    tr.querySelector(".edit-btn").onclick = () => {
-      editingStorageKey = s.key;
-      editPartCodeView.value = s.partCode;
-      editMinStockInput.value = min;
-      editModal.show();
-    };
-
-    // ✅ DELETE (HANYA SATU)
-    tr.querySelector(".delete-btn").onclick = async () => {
-      if (!confirm(`Delete storage data for ${s.partCode}?`)) return;
-      await remove(ref(db, `storage/${s.key}`));
-    };
 
     tbody.appendChild(tr);
   });
 }
+
+[
+  filterCategory,
+  filterSubCategory,
+  filterMachine,
+  filterRack,
+  filterStatus
+].forEach(f =>
+  f?.addEventListener("change", () => renderTable(storageData))
+);
 
 saveMinStockBtn.addEventListener("click", async () => {
   const newMin = Number(editMinStockInput.value);
@@ -148,4 +165,53 @@ saveMinStockBtn.addEventListener("click", async () => {
   editingStorageKey = null;
 });
 
+function fillFilter(selectEl, values) {
+  const current = selectEl.value;
+  selectEl.innerHTML = `<option value="">All</option>`;
 
+  [...new Set(values.filter(v => v))].sort().forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
+  });
+
+  selectEl.value = current;
+}
+
+
+tbody.addEventListener("click", async (e) => {
+
+  const editBtn = e.target.closest(".edit-btn");
+  const delBtn  = e.target.closest(".delete-btn");
+
+  /* =========================
+     EDIT MIN STOCK
+  ========================== */
+  if (editBtn) {
+    const key = editBtn.dataset.key;
+    const item = storageData.find(s => s.key === key);
+    if (!item) return;
+
+    editingStorageKey = key;
+    editPartCodeView.value = item.partCode;
+    editMinStockInput.value = item.minStock ?? 0;
+
+    editModal.show();
+    return;
+  }
+
+  /* =========================
+     DELETE STORAGE
+  ========================== */
+  if (delBtn) {
+    const key = delBtn.dataset.key;
+    const item = storageData.find(s => s.key === key);
+    if (!item) return;
+
+    const ok = confirm(`Delete storage data for ${item.partCode}?`);
+    if (!ok) return;
+
+    await remove(ref(db, `storage/${key}`));
+  }
+});

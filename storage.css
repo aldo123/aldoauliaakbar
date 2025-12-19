@@ -122,3 +122,31 @@ body {
 .delete-btn {
   color: #ef4444;
 }
+
+/* ===============================
+   STORAGE FILTER BAR
+================================ */
+
+
+.storage-filters {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.filter-item label {
+  font-weight: 600;
+  color: #0f5132;
+  margin-bottom: 4px;
+}
+
+.filter-item select {
+  min-width: 140px;
+}
