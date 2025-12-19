@@ -82,20 +82,20 @@ function renderTable(data) {
 
     const stock = Number(s.stock || 0);
     const min   = Number(s.minStock || 0);
-    const isLow = stock < min;   // ✅ FIX LOGIC
+    const isLow = stock < min;
 
     const tr = document.createElement("tr");
     if (isLow) tr.classList.add("low-stock");
 
     tr.innerHTML = `
-      <td>${s.partCode || "-"}</td>
-      <td>${s.partName || "-"}</td>
+      <td>${s.partCode}</td>
+      <td>${s.partName}</td>
       <td>${part.category || "-"}</td>
       <td>${part.sub || "-"}</td>
       <td>${part.machine || "-"}</td>
       <td>${part.spec || "-"}</td>
-      <td>${s.rack || "-"}</td>
-      <td>${s.row || "-"}</td>
+      <td>${s.rack}</td>
+      <td>${s.row}</td>
       <td>${min}</td>
       <td>${stock}</td>
       <td>
@@ -104,61 +104,28 @@ function renderTable(data) {
         </span>
       </td>
       <td class="action-cell">
-        <button class="icon-btn edit-btn"
-                data-key="${s.key}"
-                data-code="${s.partCode}"
-                data-min="${min}">
-          ✏️
-        </button>
-        <button class="icon-btn delete-btn"
-                data-key="${s.key}"
-                data-code="${s.partCode}">
-          🗑️
-        </button>
+        <button class="icon-btn edit-btn">✏️</button>
+        <button class="icon-btn delete-btn">🗑️</button>
       </td>
     `;
+
+    // ✅ EDIT
+    tr.querySelector(".edit-btn").onclick = () => {
+      editingStorageKey = s.key;
+      editPartCodeView.value = s.partCode;
+      editMinStockInput.value = min;
+      editModal.show();
+    };
+
+    // ✅ DELETE (HANYA SATU)
+    tr.querySelector(".delete-btn").onclick = async () => {
+      if (!confirm(`Delete storage data for ${s.partCode}?`)) return;
+      await remove(ref(db, `storage/${s.key}`));
+    };
 
     tbody.appendChild(tr);
   });
 }
-
-/* ===============================
-   ACTION HANDLER
-================================ */
-document.addEventListener("click", async (e) => {
-
-  const editBtn = e.target.closest(".edit-btn");
-  const delBtn  = e.target.closest(".delete-btn");
-
-  /* =========================
-     EDIT MIN STOCK
-  ========================== */
-  if (editBtn) {
-    editingStorageKey = editBtn.dataset.key;
-    const code = editBtn.dataset.code;
-    const min  = editBtn.dataset.min;
-
-    // isi modal
-    editPartCodeView.value = code;
-    editMinStockInput.value = min;
-
-    // buka modal
-    editModal.show();
-    return;
-  }
-
-  /* =========================
-     DELETE STORAGE
-  ========================== */
-  if (delBtn) {
-    const key = delBtn.dataset.key;
-    const code = delBtn.dataset.code;
-
-    if (confirm(`Delete storage data for ${code}?`)) {
-      await remove(ref(db, `storage/${key}`));
-    }
-  }
-});
 
 saveMinStockBtn.addEventListener("click", async () => {
   const newMin = Number(editMinStockInput.value);
