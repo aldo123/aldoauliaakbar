@@ -471,6 +471,14 @@ onValue(ref(db, "parts"), snap => {
 });
 
 onValue(ref(db, "storage"), snap => {
+  const totalItem = snap.exists()
+    ? Object.keys(snap.val()).length
+    : 0;
+
+  document.getElementById("totalSkuValue2").textContent = totalItem;
+});
+
+onValue(ref(db, "storage"), snap => {
   let low = 0;
   if (snap.exists()) {
     Object.values(snap.val()).forEach(s => {

@@ -54,6 +54,16 @@ onValue(ref(db, "parts"), snap => {
   setText("totalSkuValue", partList.length);
 });
 
+// TOTAL DISTINCT ITEM 
+onValue(ref(db, "storage"), snap => {
+  const totalItem = snap.exists()
+    ? Object.keys(snap.val()).length
+    : 0;
+
+  document.getElementById("totalSkuValue2").textContent = totalItem;
+});
+
+
 /* ===============================
    TRANSACTION SUMMARY + TABLE
 ================================ */
