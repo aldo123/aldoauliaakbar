@@ -1,7 +1,7 @@
 // ================================
 // PROJECT STATE JS – FIXED VERSION
 // ================================
-import { db, ref, get } from "./firebase-config.js";
+import { db, onValue, ref, get } from "./firebase-config.js";
 
 // Load Chart.js
 const script = document.createElement("script");
@@ -385,3 +385,137 @@ function drawDonutChart(o) {
   }
 }
 
+function getStatus(nextDate) {
+  if (!nextDate || nextDate === "--") return "OK";
+
+  const due = new Date(nextDate);
+  if (isNaN(due.getTime())) return "OK";
+
+  const today = new Date();
+  const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+
+  if (diff < 0) return "OVERDUE";
+  if (diff <= 30) return "DUE";
+  return "OK";
+}
+
+function renderCalibrationTable(data) {
+  const tbody = document.getElementById("calibrationBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  data.forEach(e => {
+
+    // 🔥 FILTER ACTION LIST
+    if (e.status === "OK") return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.equipmentNo}</td>
+      <td>${e.group}</td>
+      <td>${e.serialNo}</td>
+      <td>${e.lastInspection}</td>
+      <td>${e.nextCalibration}</td>
+      <td>
+        <span class="status-badge status-${e.status.toLowerCase()}">
+          ${e.status}
+        </span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+
+onValue(ref(db, "equipment"), snap => {
+  let ok = 0, due = 0, overdue = 0;
+  const rows = [];
+
+  if (snap.exists()) {
+    Object.entries(snap.val()).forEach(([key, e]) => {
+
+      if ((e.actionStatus || "").toUpperCase() !== "APPROVE") return;
+
+      const status = getStatus(e.nextCalibration);
+
+      if (status === "OK") ok++;
+      if (status === "DUE") due++;
+      if (status === "OVERDUE") overdue++;
+
+      rows.push({
+        key,
+        equipmentNo: e.equipmentNo || "-",
+        group: e.group || "-",
+        serialNo: e.serialNo || "-",
+        lastInspection: e.lastInspection || "-",
+        nextCalibration: e.nextCalibration || "-",
+        status
+      });
+    });
+  }
+
+  // SUMMARY
+  document.getElementById("okCount").textContent = ok;
+  document.getElementById("dueCount").textContent = due;
+  document.getElementById("overdueCount").textContent = overdue;
+
+  // TABLE
+  renderCalibrationTable(rows);
+});
+
+
+onValue(ref(db, "parts"), snap => {
+  const total = snap.exists() ? Object.keys(snap.val()).length : 0;
+  document.getElementById("totalSkuValue").textContent = total;
+});
+
+onValue(ref(db, "storage"), snap => {
+  let low = 0;
+  if (snap.exists()) {
+    Object.values(snap.val()).forEach(s => {
+      if (Number(s.stock) < Number(s.minStock)) low++;
+    });
+  }
+  document.getElementById("lowStockCount").textContent = low;
+});
+
+onValue(ref(db, "transactions"), snap => {
+  let incoming = 0, outgoing = 0;
+  const today = new Date().toDateString();
+
+  if (snap.exists()) {
+    Object.values(snap.val()).forEach(t => {
+      if (new Date(t.time).toDateString() !== today) return;
+      if (t.type === "IN") incoming += Number(t.qty || 0);
+      if (t.type === "OUT") outgoing += Number(t.qty || 0);
+    });
+  }
+
+  document.getElementById("incomingValue").textContent = incoming;
+  document.getElementById("outgoingValue").textContent = outgoing;
+});
+
+onValue(ref(db, "transactions"), snap => {
+  const tbody = document.getElementById("logBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  if (!snap.exists()) return;
+
+  Object.values(snap.val())
+    .sort((a,b)=>new Date(b.time)-new Date(a.time))
+    .forEach((t,i)=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${new Date(t.time).toLocaleString()}</td>
+        <td>${t.partName || "-"}</td>
+        <td class="${t.type==="IN"?"text-success":"text-danger"}">${t.type}</td>
+        <td>${t.qty}</td>
+        <td>${t.pic || "-"}</td>
+        <td>${t.remark || "-"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+});

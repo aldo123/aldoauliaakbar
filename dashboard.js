@@ -174,6 +174,32 @@ function loadPMReport() {
       });
 }
 
+function loadequipmentlist() {
+  fetch("equipmentlist.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "equipmentlist.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
+function loadcalibration() {
+  fetch("calibration.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "calibration.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
 function loadpartlist() {
   fetch("partlist.html?ver=" + Date.now())
     .then(r => r.text())
@@ -373,8 +399,8 @@ const pages = {
   "part-list": "<div id='partlistLoader'></div>",
   "inout": "<div id='inoutLoader'></div>",
   "storage": "<div id='storageLoader'></div>",
-  "device-category": "<h4>Device Category</h4><p>Device classifications and grouping setup.</p>",
-  "device-list": "<h4>Device List</h4><p>List of all machines or devices registered in system.</p>",
+  "equipmentlist": "<div id='equipment-listLoader'></div>",
+  "calibration": "<div id='calibration-planLoader'></div>",
   "maintenance-plan": "<div id='maintenance-planLoader'></div>",
   "oee-tpm": "<div id='oeeLoader'></div>",
   "equipment-downtime": "<div id='RSALoader'></div>",
@@ -404,7 +430,7 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "inout") loadInOut();if (pageKey === "storage") loadstorage();if (pageKey === "traceability") traceabilitysn();});
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "inout") loadInOut();if (pageKey === "storage") loadstorage();if (pageKey === "equipmentlist") loadequipmentlist(); if (pageKey === "calibration") loadcalibration();if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
@@ -460,6 +486,12 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "storage") {
             loadstorage();
+        }
+        else if (key === "calibration") {
+            loadcalibration();
+        }
+        else if (key === "equipmentlist") {
+            loadequipmentlist();
         }
 
     });

@@ -1,0 +1,103 @@
+body {
+  background:#f6f8fb;
+  font-family:"Segoe UI", sans-serif;
+}
+
+.equipment-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+  
+}
+
+.header-actions button {
+  margin-left:6px;
+}
+
+/* FILTER */
+.filter-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px; /* 🔥 jarak antar filter */
+  margin-bottom: 10px;
+}
+
+/* SETIAP ITEM FILTER */
+.filter-row > div {
+  display: flex;
+  flex-direction: column;
+}
+
+/* UKURAN KONTROL */
+.filter-row input,
+.filter-row select {
+  height: 34px;
+  font-size: 13px;
+  padding: 4px 8px;
+  min-width: 130px;
+}
+
+
+/* ACTION */
+.icon-btn {
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  font-size:15px;
+  margin:0 4px;
+}
+
+/* ===== TABLE SCROLL CONTAINER ===== */
+.table-wrapper {
+  max-height: 70vh;
+  overflow-y: auto;
+  position: relative; /* 🔥 WAJIB */
+}
+
+/* ===== STICKY HEADER ===== */
+.equipment-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #065f46;
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.equipment-table {
+  width: 100%;
+  border-collapse: separate; /* 🔥 WAJIB */
+  border-spacing: 0;
+}
+
+/* ===== REMARK BADGE ===== */
+.remark-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  min-width: 70px;
+  text-align: center;
+}
+
+/* OK */
+.remark-ok {
+  background-color: #22c55e; /* hijau */
+  color: #ffffff;
+}
+
+/* DUE */
+.remark-due {
+  background-color: #facc15; /* kuning */
+  color: #000000;
+}
+
+/* OVERDUE */
+.remark-overdue {
+  background-color: #ef4444; /* merah */
+  color: #ffffff;
+}

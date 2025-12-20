@@ -25,14 +25,14 @@
 /* Horizontal chart container */
 .chart-container-h {
   width: 100%;
-  height: 320px; /* controllable */
+  height: 240px; /* controllable */
   padding: 6px 12px 6px 6px;
 }
 
 /* Vertical chart container */
 .chart-container-v {
   width: 100%;
-  height: 320px;
+  height: 240px;
   padding: 6px 6px 6px 12px;
 }
 
@@ -42,13 +42,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 290px;
 }
 
 .donut-wrap {
   position: relative;
-  width: 190px;
-  height: 282px;
+  width: 160px;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,7 +64,7 @@
 .donut-center {
   position: absolute;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 18px;
   color: #2ecc71;
   pointer-events: none;
 }
@@ -79,8 +79,323 @@
 /* Make charts responsive on small screens */
 @media (max-width: 992px) {
   .chart-container-h, .chart-container-v {
-    height: 260px;
+    height: 200px;
   }
-  .donut-wrap { width: 150px; height: 150px; }
-  .donut-center { font-size: 22px; }
+  .donut-wrap { width: 160px; height: 160px; }
+  .donut-center { font-size: 16px; }
 }
+
+/* CALIBRATION */
+
+/* =========================================================
+   GLOBAL
+========================================================= */
+body {
+  background: #f4f6f9;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.calibration-wrapper {
+  padding: 20px;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+.calibration-header h4 {
+  font-weight: 700;
+  color: #14532d;
+  margin-bottom: 10px;
+}
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
+.summary-card {
+  position: relative;
+  padding: 18px 22px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+  overflow: hidden;
+}
+
+.summary-card::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255,255,255,.08);
+  border-radius: 50%;
+}
+
+.summary-card h6 {
+  font-size: 20px;
+  letter-spacing: .8px;
+  opacity: .9;
+}
+
+.summary-card span {
+  font-size: 32px;
+  font-weight: 800;
+  display: block;
+  margin-top: 6px;
+}
+
+.summary-card.ok {
+  background: linear-gradient(135deg, #2ecc71, #1e8449);
+}
+
+.summary-card.due {
+  background: linear-gradient(135deg, #f1c40f, #9a7d0a);
+  
+}
+
+.summary-card.overdue {
+  background: linear-gradient(135deg, #e74c3c, #922b21);
+}
+
+.summary-card h6 i {
+  font-size: 32px;
+  vertical-align: middle;
+}
+/* =========================================================
+   TABLE WRAPPER (SCROLL AREA)
+========================================================= */
+.calibration-table-wrapper {
+  max-height: 11vh; /* sama feel dgn Equipment List */
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  position: relative; /* 🔥 WAJIB */
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+.calibration-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Sticky Header */
+.calibration-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #065f46;
+  color: #ffffff;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  padding: 10px;
+}
+
+/* Body Rows */
+.calibration-table tbody tr {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background .15s ease;
+}
+
+.calibration-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.calibration-table td {
+  font-size: 13px;
+  padding: 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+  min-width: 72px;
+  text-align: center;
+}
+
+.status-ok {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.status-due {
+  background: #facc15;
+  color: #1f2937;
+}
+
+.status-overdue {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+.calibration-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.calibration-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.calibration-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =========================================================
+   SMS
+========================================================= */
+
+body {
+  background: radial-gradient(circle at top, #1f3d32, #0d1f1a);
+  font-family: "Segoe UI", sans-serif;
+  color: #fff;
+}
+
+.spm-wrapper {
+  padding: 20px;
+}
+
+
+.spm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.summary {
+  padding: 20px;
+  border-radius: 12px;
+  color: #fff;
+}
+
+
+.green { background: linear-gradient(135deg, #2ecc71, #1e8449); }
+.red { background: linear-gradient(135deg, #e74c3c, #922b21); }
+.yellow { background: linear-gradient(135deg, #f1c40f, #9a7d0a); }
+.teal { background: linear-gradient(135deg, #1abc9c, #117864); }
+
+
+.spm-table-wrapper {
+  max-height: 11vh; /* sama feel dgn Equipment List */
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  position: relative; /* 🔥 WAJIB */
+}
+
+.table-dark {
+  background-color: #0f172a33;
+}
+
+.table-dark thead th {
+  background-color: #064e3b;
+  color: #ecfdf5;
+}
+
+.table-dark tbody tr {
+  background-color: #02061737;
+}
+
+.table-dark tbody tr:hover {
+  background-color: #064e3b34;
+}
+
+/* ===============================
+   FUTURISTIC SUMMARY CARD
+================================ */
+
+.spm-summary .spm-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.spm-summary .spm-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.spm-summary .spm-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+/* ICON */
+.spm-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: rgba(0,0,0,0.25);
+}
+
+/* TEXT */
+.spm-info h6 {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.spm-info h2 {
+  margin: 2px 0;
+  font-weight: 700;
+}
+
+.spm-info small {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.spm-info .sub {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* COLOR THEMES */
+.spm-card.incoming {
+  background: linear-gradient(135deg, #2ecc71, #1e8449);
+}
+.spm-card.outgoing {
+  background: linear-gradient(135deg, #e74c3c, #922b21);
+}
+.spm-card.lowstock {
+  background: linear-gradient(135deg, #f1c40f, #9a7d0a);
+}
+.spm-card.totalsku {
+  background: linear-gradient(135deg, #1abc9c, #117864);
+}
+

@@ -1,44 +1,243 @@
 <!-- project-state.html -->
-<link rel="stylesheet" href="project-state.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WIK BT - TPM | Executive Dashboard</title>
+  <link rel="stylesheet" href="project-state.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
 
-<div class="project-state-wrapper p-3">
-  <h4 class="fw-bold mb-3">Project State — Engineering Summary</h4>
-  
-  <div class="row g-3 align-items-start">
-    <div class="col-lg-6">
-      <div class="chart-card">
-        <h6 class="chart-title">Engineer Task Status</h6>
-        <div class="chart-container-h" id="engineerChartContainer">
-          <canvas id="chartEngineer"></canvas>
+<body>
+<!-- pROJECT STATE -->
+  <div class="project-state-wrapper p-3">
+    <h4 class="fw-bold mb-3">Project State — Engineering Summary</h4>
+    
+    <div class="row g-3 align-items-start">
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <h6 class="chart-title">Engineer Task Status</h6>
+          <div class="chart-container-h" id="engineerChartContainer">
+            <canvas id="chartEngineer"></canvas>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="col-lg-4">
-      <div class="chart-card">
-        <h6 class="chart-title">Project Type Status</h6>
-        <div class="chart-container-v" id="typeChartContainer">
-          <canvas id="chartType"></canvas>
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <h6 class="chart-title">Project Type Status</h6>
+          <div class="chart-container-v" id="typeChartContainer">
+            <canvas id="chartType"></canvas>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="col-lg-2">
-      <div class="chart-card donut-card">
-        <h6 class="chart-title">Engineer Performance</h6>
+      <div class="col-lg-2">
+        <div class="chart-card donut-card">
+          <h6 class="chart-title">Engineer Performance</h6>
 
-        <div id="donutTaskInfo" style="color:#d9ffd8; font-size:13px; margin-bottom:4px; font-weight:600; text-align:center;">
-        <!-- Updated by JS -->
-        </div>
+          <div id="donutTaskInfo" style="color:#d9ffd8; font-size:13px; margin-bottom:4px; font-weight:600; text-align:center;">
+          <!-- Updated by JS -->
+          </div>
 
-        <div class="donut-wrap">
-          <canvas id="chartDonut"></canvas>
-          <div class="donut-center" id="donutCenterLabel">0%</div>
+          <div class="donut-wrap">
+            <canvas id="chartDonut"></canvas>
+            <div class="donut-center" id="donutCenterLabel">0%</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- project-state.js loaded as module -->
+  <!-- CALIBRATION -->
+  <div class="calibration-wrapper">
+
+    <!-- HEADER -->
+    <div class="calibration-header">
+      <h4>🧪 Calibration Schedule</h4>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="summary-card ok">
+          <h6>
+            <i class="bi bi-check-circle-fill me-1"></i>
+            Calibrated
+          </h6>
+          <span id="okCount">0</span> Equipment
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="summary-card due">
+          <h6>
+            <i class="bi bi-clock-fill me-1"></i>
+            Due Soon
+          </h6>
+          <span id="dueCount">0</span> Equipment
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="summary-card overdue">
+          <h6>
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Overdue
+          </h6>
+          <span id="overdueCount">0</span> Equipment
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="calibration-table-wrapper">
+      <table class="table calibration-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Group Equipment</th>
+            <th>SN</th>
+            <th>Last Calibration</th>
+            <th>Next Due</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="calibrationBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal fade" id="calibrationModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h6 class="modal-title">Mark as Calibrated</h6>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="editIndex">
+
+          <div class="mb-2">
+            <label>Calibration Date</label>
+            <input type="date" id="calDate" class="form-control">
+          </div>
+
+          <div class="mb-2">
+            <label>Remarks</label>
+            <input id="calRemark" class="form-control">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success" id="saveCalibration">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPAREPART -->
+  <div class="spm-wrapper">
+
+  <!-- HEADER -->
+  <div class="spm-header">
+    <h3>🛠️ Spare Part Management</h3>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="row g-4 mb-4 spm-summary">
+
+    <!-- Incoming -->
+    <div class="col-md-3">
+      <div class="spm-card incoming">
+        <div class="spm-icon">
+          <i class="bi bi-box-arrow-in-down"></i>
+        </div>
+        <div class="spm-info">
+          <h6>Incoming</h6>
+          <h2><span id="incomingValue">0</span> <small>pcs</small></h2>
+          <span class="sub">Today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outgoing -->
+    <div class="col-md-3">
+      <div class="spm-card outgoing">
+        <div class="spm-icon">
+          <i class="bi bi-box-arrow-up"></i>
+        </div>
+        <div class="spm-info">
+          <h6>Outgoing</h6>
+          <h2><span id="outgoingValue">0</span> <small>pcs</small></h2>
+          <span class="sub">Today</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low Stock -->
+    <div class="col-md-3">
+      <div class="spm-card lowstock">
+        <div class="spm-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div class="spm-info">
+          <h6>Low Stock</h6>
+          <h2><span id="lowStockCount">0</span> <small>Items</small></h2>
+          <span class="sub">Below Min Qty</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total SKU -->
+    <div class="col-md-3">
+      <div class="spm-card totalsku">
+        <div class="spm-icon">
+          <i class="bi bi-collection"></i>
+        </div>
+        <div class="spm-info">
+          <h6>Total SKU</h6>
+          <h2><span id="totalSkuValue">0</span> <small>Items</small></h2>
+          <span class="sub">Registered Parts</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  
+    <div class="card table-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Transaction Log</h5>
+      </div>
+
+      
+      <div class="spm-table-wrapper">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Date & Time</th>
+              <th>Part Name</th>
+              <th>IN/OUT</th>
+              <th>Quantity</th>
+              <th>PIC</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  
+<!-- loaded as module -->
 <script type="module" src="project-state.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
