@@ -85,6 +85,109 @@
   .donut-center { font-size: 16px; }
 }
 
+.prongoing-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 560px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.prongoing-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.prongoing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+.pr-card {
+  display: flex;
+  min-width: 560px;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pr-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.pr-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+/* ICON */
+.pr-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: rgba(0,0,0,0.25);
+}
+
+/* TEXT */
+.pr-info h6 {
+  margin: 0;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.pr-info h2 {
+  margin: 2px 0;
+  font-weight: 700;
+}
+
+.pr-info small {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.pr-info .sub {
+  font-size: 20px;
+  opacity: 0.75;
+}
+
+/* COLOR THEMES */
+.pr-card {
+  background: linear-gradient(135deg, #e74c3c, #922b21);
+}
+
+.prongoing-card {
+  background: linear-gradient(135deg, #f1c40f, #9a7d0a);
+}
+
 /* CALIBRATION */
 
 /* =========================================================
@@ -112,8 +215,9 @@ body {
 ========================================================= */
 .summary-card {
   position: relative;
-  padding: 18px 22px;
+  padding: 10px 22px;
   border-radius: 14px;
+  max-height: 150px;
   color: #fff;
   font-weight: 600;
   box-shadow: 0 8px 20px rgba(0,0,0,.12);
@@ -241,21 +345,6 @@ body {
   color: #ffffff;
 }
 
-/* =========================================================
-   SCROLLBAR
-========================================================= */
-.calibration-table-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.calibration-table-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-.calibration-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
 
 /* =========================================================
    SMS
@@ -326,7 +415,7 @@ body {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 22px;
+  padding: 16px;
   border-radius: 16px;
   backdrop-filter: blur(10px);
   color: #fff;
@@ -398,4 +487,13 @@ body {
 .spm-card.totalsku {
   background: linear-gradient(135deg, #1abc9c, #117864);
 }
+
+/* PR / PO summary row */
+.prpo-row {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0px;           /* jarak antar card */
+  margin-left: 0;
+}
+
 

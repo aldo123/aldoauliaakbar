@@ -174,6 +174,20 @@ function loadPMReport() {
       });
 }
 
+
+function loadrequestlist() {
+  fetch("request-list.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "request-list.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
 function loadequipmentlist() {
   fetch("equipmentlist.html?ver=" + Date.now())
     .then(r => r.text())
@@ -391,7 +405,7 @@ const pages = {
         <tbody></tbody>
       </table>
     </div>`,
-  "Request-list": "<h4>Request List</h4><p>All project documents managed here.</p>",
+  "request-list": "<h4>Request List</h4><p>All PR/PO documents managed here.</p>",
   "open-list-old": "<h4>Open List (legacy)</h4>",
   "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
   "asset-category": "<h4>Asset Category</h4><p>Organize assets by group or functionality.</p>",
@@ -430,8 +444,22 @@ function openTab(pageKey, title){
   const tab = document.createElement("div"); tab.className="tab active"; tab.dataset.page=pageKey;
   tab.innerHTML = `${escapeHtml(title)} <span class="close-tab" title="Close">&times;</span>`;
   tabContainer.appendChild(tab); setActiveTab(pageKey);
-  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); if (pageKey === "oee-tpm") loadOEETPMModule(); if (pageKey === "project-state") loadProjectStateModule(); if (pageKey === "equipment-fpy") loadMESReport(); if (pageKey === "equipment-downtime") loadRSA();if (pageKey === "defect") loadDefectReport();if (pageKey === "maintenance-plan") loadPMReport();if (pageKey === "part-list") loadpartlist();if (pageKey === "inout") loadInOut();if (pageKey === "storage") loadstorage();if (pageKey === "equipmentlist") loadequipmentlist(); if (pageKey === "calibration") loadcalibration();if (pageKey === "traceability") traceabilitysn();});
-  tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
+  tab.addEventListener("click", (e)=>{ if (e.target.classList.contains("close-tab")) return; setActiveTab(pageKey); 
+    if (pageKey === "oee-tpm") loadOEETPMModule(); 
+    if (pageKey === "project-state") loadProjectStateModule(); 
+    if (pageKey === "equipment-fpy") loadMESReport(); 
+    if (pageKey === "equipment-downtime") loadRSA();
+    if (pageKey === "defect") loadDefectReport();
+    if (pageKey === "maintenance-plan") loadPMReport();
+    if (pageKey === "part-list") loadpartlist();
+    if (pageKey === "inout") loadInOut();
+    if (pageKey === "storage") loadstorage();
+    if (pageKey === "request-list") loadrequestlist(); 
+    if (pageKey === "equipmentlist") loadequipmentlist(); 
+    if (pageKey === "calibration") loadcalibration();
+    if (pageKey === "traceability") traceabilitysn();});
+  tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); 
+    if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
 }
 function setActiveTab(pageKey){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
@@ -492,6 +520,9 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "equipmentlist") {
             loadequipmentlist();
+        }
+        else if (key === "request-list") {
+            loadrequestlist();
         }
 
     });

@@ -251,6 +251,7 @@ saveEquipment.onclick = async (e) => {
     : await push(ref(db, "equipment"), payload);
 
   modal.hide();
+  
 };
 
 
