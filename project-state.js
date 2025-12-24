@@ -527,3 +527,62 @@ onValue(ref(db, "transactions"), snap => {
       tbody.appendChild(tr);
     });
 });
+
+
+/* ===============================
+   REQUEST STATUS COUNTER
+================================ */
+
+// ambil tanggal dari OA-PR#
+function getDateFromOaPr(oaPr) {
+  const match = String(oaPr || "").match(/PR(\d{8})/);
+  if (!match) return null;
+
+  const y = match[1].slice(0, 4);
+  const m = match[1].slice(4, 6);
+  const d = match[1].slice(6, 8);
+  return new Date(`${y}-${m}-${d}`);
+}
+
+// status final (SAMA dgn request-list.js)
+function computeRequestStatus(r) {
+  const prOk = String(r.prNo || "").trim() !== "";
+  const poOk = String(r.po || "").trim() !== "";
+  if (prOk && poOk) return "Done";
+
+  if (String(r.status || "").toLowerCase() === "cancelled") {
+    return "Cancelled";
+  }
+
+  const prDate = getDateFromOaPr(r.oaPr);
+  if (prDate) {
+    const limit = new Date(prDate);
+    limit.setDate(limit.getDate() + 10);
+    if (new Date() > limit) return "Delay";
+  }
+
+  return "Ongoing";
+}
+
+/* ===============================
+   REALTIME FIREBASE LISTENER
+================================ */
+onValue(ref(db, "request-list"), snap => {
+  let delay = 0;
+  let ongoing = 0;
+
+  if (snap.exists()) {
+    Object.values(snap.val()).forEach(r => {
+      const status = computeRequestStatus(r);
+      if (status === "Delay") delay++;
+      else if (status === "Ongoing") ongoing++;
+    });
+  }
+
+  // update UI
+  const elDelay = document.getElementById("prOverdueCount");
+  const elOngoing = document.getElementById("prOngoingCount");
+
+  if (elDelay) elDelay.textContent = delay;
+  if (elOngoing) elOngoing.textContent = ongoing;
+});

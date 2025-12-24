@@ -174,6 +174,18 @@ function loadPMReport() {
       });
 }
 
+function loadtechnician() {
+  fetch("technician-performance.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "technician-performance.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
 
 function loadrequestlist() {
   fetch("request-list.html?ver=" + Date.now())
@@ -276,6 +288,7 @@ function loadDefectReport() {
          document.head.appendChild(link);
       });
 }
+
 
 function loadProjectStateModule() {
 
@@ -407,9 +420,9 @@ const pages = {
     </div>`,
   "request-list": "<h4>Request List</h4><p>All PR/PO documents managed here.</p>",
   "open-list-old": "<h4>Open List (legacy)</h4>",
-  "asset-list": "<h4>Asset List</h4><p>Engineering asset details, ID, and ownership records.</p>",
-  "asset-category": "<h4>Asset Category</h4><p>Organize assets by group or functionality.</p>",
-  "device-state": "<h4>Device State</h4><p>Monitor device performance and operation state.</p>",
+  "technician-performance": "<h4>Technician Performance</h4><p>Performance from technician</p>",
+  "asset-list": "<h4>Asset list</h4><p>All the asset from equipment</p>",
+  "device-state": "<h4>Device State</h4><p>EE Device.</p>",
   "part-list": "<div id='partlistLoader'></div>",
   "inout": "<div id='inoutLoader'></div>",
   "storage": "<div id='storageLoader'></div>",
@@ -457,6 +470,7 @@ function openTab(pageKey, title){
     if (pageKey === "request-list") loadrequestlist(); 
     if (pageKey === "equipmentlist") loadequipmentlist(); 
     if (pageKey === "calibration") loadcalibration();
+    if (pageKey === "technician-performance") loadtechnician();
     if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); 
     if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
@@ -523,6 +537,9 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "request-list") {
             loadrequestlist();
+        }
+        else if (key === "technician-performance") {
+            loadtechnician();
         }
 
     });

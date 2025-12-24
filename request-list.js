@@ -80,6 +80,7 @@ onValue(ref(db, "request-list"), snap => {
   }
   populateFilters();   // 🔥 WAJIB
   render();
+  countRequestStatus();
 });
 
 
@@ -109,6 +110,28 @@ function computeStatus(r) {
   // 4️⃣ DEFAULT
   return "Ongoing";
 }
+
+
+function countRequestStatus() {
+  let delay = 0;
+  let ongoing = 0;
+
+  cache.forEach(r => {
+    const status = computeStatus(r);
+
+    if (status === "Delay") delay++;
+    else if (status === "Ongoing") ongoing++;
+  });
+
+  // update UI kalau elemen ada
+  const elDelay = document.getElementById("prOverdueCount");
+  const elOngoing = document.getElementById("prOngoingCount");
+
+  if (elDelay) elDelay.textContent = delay;
+  if (elOngoing) elOngoing.textContent = ongoing;
+}
+
+
 
 
 function getDateFromOaPr(oaPr) {
@@ -233,14 +256,14 @@ document.getElementById("btnSaveRequest").addEventListener("click", async () => 
   }
 
   // 🔥 VALIDASI DUPLIKAT OA-PR#
-  const duplicate = cache.find(r =>
-    r.oaPr === oaPr && r.key !== editKey
-  );
+  // const duplicate = cache.find(r =>
+  //   r.oaPr === oaPr && r.key !== editKey
+  // );
 
-  if (duplicate) {
-    alert(`❌ OA-PR# "${oaPr}" sudah digunakan oleh request lain`);
-    return;
-  }
+  // if (duplicate) {
+  //   alert(`❌ OA-PR# "${oaPr}" sudah digunakan oleh request lain`);
+  //   return;
+  // }
 
   const payload = {
     oaPr,
