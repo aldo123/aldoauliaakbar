@@ -44,13 +44,13 @@
 }
 
 /* ===== TECHNICIAN (VERTICAL SCROLL) ===== */
-.tech-scroll {
+/* .tech-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-}
+} */
 
-.tech-bar {
+/* .tech-bar {
   margin-bottom: 12px;
 }
 
@@ -78,7 +78,7 @@
   align-items: center;
   justify-content: flex-end;
   transition: width 0.4s ease;
-}
+} */
 
 /* ===== MONTH (HORIZONTAL SCROLL) ===== */
 .month-scroll {
@@ -133,53 +133,62 @@
 /* ===============================
    TECHNICIAN PERFORMANCE (FUTURISTIC)
 ================================ */
-#techPerformanceChart {
-  padding: 8px 12px;
-}
-
-/* 1 row */
 .tech-row {
   display: grid;
-  grid-template-columns: 120px 1fr 50px;
+  grid-template-columns: 140px 1fr 70px;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-/* Name */
+
 .tech-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1b1f24;
-  white-space: nowrap;
-}
-
-/* Bar wrapper */
-.tech-bar-wrap {
-  width: 100%;
-}
-
-/* Background track */
-.tech-bar-bg {
-  height: 14px;
-  background: #e9ecef;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
-}
-
-/* Fill */
-.tech-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #1b5e20, #2e7d32);
-  border-radius: 8px;
-  transition: width .6s ease;
-}
-
-/* Percent */
-.tech-percent {
-  font-size: 12px;
   font-weight: 700;
-  color: #1b5e20;
+  font-size: 14px;
+  color: #1f2937;
+  letter-spacing: 0.3px;
+}
+
+
+.tech-bar-bg {
+  display: flex;              /* 🔥 bikin bar berjajar */
+  width: 100%;
+  height: 20px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tech-bar {
+  height: 100%;
+  min-width: 2px;        /* 🔥 ANTI BAR HILANG */
+}
+
+.tech-bar.done {
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
+
+.tech-bar.ongoing {
+  background: linear-gradient(90deg, #f1c40f, #f39c12);
+}
+
+.tech-bar.delay {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+.tech-bar.reject {
+  background: linear-gradient(90deg, #424141, #333131);
+  box-shadow: inset 0 0 4px rgba(0,0,0,.4);
+}
+
+.tech-percent {
+  font-weight: 700;
+  font-size: 14px;
   text-align: right;
+  color: #0f172a;
+}
+
+.tech-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
 }

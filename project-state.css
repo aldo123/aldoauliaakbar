@@ -15,6 +15,7 @@
   box-shadow: inset 0 0 0 4px rgba(0,0,0,0.12);
 }
 
+
 /* Titles */
 .chart-title {
   font-size: 14px;
@@ -23,18 +24,18 @@
 }
 
 /* Horizontal chart container */
-.chart-container-h {
+/* .chart-container-h {
   width: 100%;
-  height: 240px; /* controllable */
+  height: 240px; 
   padding: 6px 12px 6px 6px;
-}
+} */
 
 /* Vertical chart container */
-.chart-container-v {
+/* .chart-container-v {
   width: 100%;
   height: 240px;
   padding: 6px 6px 6px 12px;
-}
+} */
 
 /* Donut card styles */
 .donut-card {
@@ -55,10 +56,10 @@
   margin: 8px 0;
 }
 
-.donut-wrap canvas {
+/* .donut-wrap canvas {
   width: 100% !important;
   height: 100% !important;
-}
+} */
 
 /* center label inside donut */
 .donut-center {
@@ -75,6 +76,8 @@
   color: #ffffff;
   margin-top: 4px;
 }
+
+
 
 /* Make charts responsive on small screens */
 @media (max-width: 992px) {
@@ -497,3 +500,306 @@ body {
 }
 
 
+.pmongoing-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 322px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pmongoing-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.pmongoing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+.pmoverdue-card {
+  display: flex;
+  min-width: 322px;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pmoverdue-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.pmoverdue-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+.pmreject-card {
+  display: flex;
+  min-width: 322px;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pmreject-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.pmreject-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+.pmdone-card {
+  display: flex;
+  min-width: 322px;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 20px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pmdone-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0)
+  );
+}
+
+.pmdone-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+}
+
+/* ICON */
+.pm-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  background: rgba(0,0,0,0.25);
+}
+
+/* TEXT */
+.pm-info h6 {
+  margin: 0;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.pm-info h2 {
+  margin: 2px 0;
+  font-weight: 700;
+}
+
+.pm-info small {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.pm-info .sub {
+  font-size: 20px;
+  opacity: 0.75;
+}
+
+/* COLOR THEMES */
+.pmoverdue-card {
+  background: linear-gradient(135deg, #e74c3c, #922b21);
+}
+
+.pmongoing-card {
+  background: linear-gradient(135deg, #f1c40f, #9a7d0a);
+}
+
+.pmdone-card {
+  background: linear-gradient(135deg, #2ecc71, #1e8449);
+}
+
+.pmreject-card {
+  background: linear-gradient(135deg, #3b3b3b, #797979);
+}
+
+/* ===============================
+   TECHNICIAN PERFORMANCE (FUTURISTIC)
+================================ */
+.tech-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 70px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+
+.tech-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+
+.tech-bar-bg {
+  display: flex;              /* 🔥 bikin bar berjajar */
+  width: 100%;
+  height: 20px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tech-bar {
+  height: 100%;
+  min-width: 2px;        /* 🔥 ANTI BAR HILANG */
+}
+
+.tech-bar.done {
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
+
+.tech-bar.ongoing {
+  background: linear-gradient(90deg, #f1c40f, #f39c12);
+}
+
+.tech-bar.delay {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+.tech-bar.reject {
+  background: linear-gradient(90deg, #424141, #333131);
+  box-shadow: inset 0 0 4px rgba(0,0,0,.4);
+}
+
+.tech-percent {
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+  color: #ffffff;
+}
+
+.equal-card {
+  height: 290px;          /* ⬅️ WAJIB: batas tinggi */
+  display: flex;
+  flex-direction: column;
+}
+
+.tech-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.tech-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tech-scroll::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+}
+
+.tech-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2ecc71, #1e8449);
+  border-radius: 6px;
+}
+
+.tech-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #34d399, #16a34a);
+}
+
+.equal-card {
+  height: 290px;          /* 🔥 KUNCI TINGGI ROW */
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card.equal-card {
+  justify-content: space-between;
+}
+
+.chart-container-h,
+.chart-container-v {
+  flex: 1;
+}
+
+.donut-card {
+  justify-content: center;
+}
+
+/* === FIX TECHNICIAN PERFORMANCE CARD COLOR === */
+.project-state-wrapper .card.equal-card {
+  background: #0e5a2f;              /* sama dengan chart-card */
+  color: #ffffff;
+  border: none;
+  box-shadow: inset 0 0 0 4px rgba(0,0,0,0.12);
+}
+
+/* header technician */
+.project-state-wrapper .card.equal-card .card-header {
+  background: transparent;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  font-weight: 700;
+}
+
+.chart-card canvas,
+.chart-container-h canvas,
+.chart-container-v canvas {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.chart-card {
+  backdrop-filter: none !important;
+}

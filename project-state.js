@@ -230,6 +230,7 @@ function drawEngineerChart(stats) {
     options: {
       indexAxis: "y",
       maintainAspectRatio: false,
+      devicePixelRatio: window.devicePixelRatio || 1, 
       responsive: true,
 
       plugins: {
@@ -271,9 +272,30 @@ function drawEngineerChart(stats) {
       },
 
       scales: {
-        x: { stacked:true, ticks:{ color:"#ffffff" } },
-        y: { stacked:true, ticks:{ color:"#ffffff" } }
+      x: {
+        stacked: true,
+        ticks: {
+          color: "#ffffff",
+          font: {
+            size: 12,
+            weight: "600",
+            family: "Segoe UI, Arial, sans-serif"
+          }
+        }
+      },
+      y: {
+        stacked: true,
+        ticks: {
+          color: "#ffffff",
+          font: {
+            size: 13,
+            weight: "600",
+            family: "Segoe UI, Arial, sans-serif"
+          }
+        }
       }
+    }
+
     }
   });
 }
@@ -306,6 +328,7 @@ function drawTypeChart(stats) {
     options:{
       maintainAspectRatio:false,
       responsive:true,
+      devicePixelRatio: window.devicePixelRatio || 1, // 🔥 TAMBAH INI
       plugins:{
         legend:{ labels:{ color:"#ffffff" }},
         tooltip:{
@@ -585,4 +608,77 @@ onValue(ref(db, "request-list"), snap => {
 
   if (elDelay) elDelay.textContent = delay;
   if (elOngoing) elOngoing.textContent = ongoing;
+});
+
+
+//teknisi performance
+
+function getCurrentISOWeek() {
+  const today = new Date();
+  const d = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function computeStatus(week, dateCompleted, weekCompleted) {
+  const w = Number(week);
+  const wc = Number(weekCompleted);
+  const currentWeek = getCurrentISOWeek();
+
+  const hasDate =
+    typeof dateCompleted === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dateCompleted);
+
+  if (hasDate && !isNaN(w) && !isNaN(wc)) {
+    return wc === w ? "Done" : "Reject";
+  }
+
+  if (!isNaN(w) && currentWeek > w) return "Delay";
+  return "Ongoing";
+}
+
+onValue(ref(db, "preventive-maintenance"), snap => {
+  const container = document.getElementById("techPerformanceChart");
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!snap.exists()) return;
+
+  const map = {};
+
+  Object.values(snap.val()).forEach(r => {
+    if (!r.responsible) return;
+
+    if (!map[r.responsible]) {
+      map[r.responsible] = { total:0, done:0, ongoing:0, delay:0, reject:0 };
+    }
+
+    map[r.responsible].total++;
+    const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+
+    if (st === "Done") map[r.responsible].done++;
+    else if (st === "Reject") map[r.responsible].reject++;
+    else if (st === "Delay") map[r.responsible].delay++;
+    else map[r.responsible].ongoing++;
+  });
+
+  Object.entries(map).forEach(([name,v]) => {
+    const total = v.total || 1;
+    const pct = Math.round(v.done / total * 100);
+
+    container.innerHTML += `
+      <div class="tech-row">
+        <div class="tech-name">${name}</div>
+        <div class="tech-bar-bg">
+          <div class="tech-bar done" style="width:${v.done/total*100}%"></div>
+          <div class="tech-bar ongoing" style="width:${v.ongoing/total*100}%"></div>
+          <div class="tech-bar delay" style="width:${v.delay/total*100}%"></div>
+          <div class="tech-bar reject" style="width:${v.reject/total*100}%"></div>
+        </div>
+        <div class="tech-percent">${pct}%</div>
+      </div>
+    `;
+  });
 });

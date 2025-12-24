@@ -84,7 +84,8 @@ function render() {
   const fs = filterStatus.value;
 
   const filtered = cache.filter(r => {
-    const liveStatus = computeStatus(r.week, r.dateCompleted);
+    const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+
 
     if (fw && String(r.week) !== fw) return false;
     if (fe && r.equipmentType !== fe) return false;
@@ -96,14 +97,23 @@ function render() {
   });
 
   filtered.forEach((r, i) => {
-    const liveStatus = computeStatus(r.week, r.dateCompleted);
+    const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
 
-    const statusBadge =
-      liveStatus === "Done"
-        ? `<span class="badge bg-success">Done</span>`
-        : liveStatus === "Delay"
-        ? `<span class="badge bg-danger">Delay</span>`
-        : `<span class="badge bg-warning text-dark">Ongoing</span>`;
+    let statusBadge = "";
+
+    if (liveStatus === "Done") {
+      statusBadge = `<span class="badge bg-success">Done</span>`;
+    }
+    else if (liveStatus === "Delay") {
+      statusBadge = `<span class="badge bg-danger">Delay</span>`;
+    }
+    else if (liveStatus === "Reject") {
+      statusBadge = `<span class="badge bg-dark">Reject</span>`;
+    }
+    else {
+      statusBadge = `<span class="badge bg-warning text-dark">Ongoing</span>`;
+    }
+
 
 
     const tr = document.createElement("tr");
@@ -139,7 +149,8 @@ function attachRowActions() {
   document.querySelectorAll(".edit").forEach(b => {
     b.onclick = () => {
       const r = cache.find(x => x.key === b.dataset.k);
-      const autoStatus = computeStatus(r.week, r.dateCompleted);
+      const autoStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+
       if (!r) return;
 
       editKey = r.key;
@@ -193,7 +204,10 @@ document.getElementById("btnSave").onclick = async () => {
   const dateCompleted = safeDate(f.dateCompleted.value);
   const weekCompleted = dateCompleted ? getISOWeek(dateCompleted) : "";
 
-  const statusAuto = computeStatus(f.week.value, dateCompleted);
+  const statusAuto = computeStatus(
+  f.week.value,
+  dateCompleted,
+  weekCompleted);
 
   const payload = {
     equipmentType: f.equipmentType.value || "",
@@ -420,16 +434,44 @@ function isValidISODate(v) {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 }
 
-function computeStatus(week, dateCompleted) {
-  // DONE hanya jika dateCompleted VALID
-  if (isValidISODate(dateCompleted)) return "Done";
+function computeStatus(week, dateCompleted, weekCompleted) {
 
+  const w  = Number(week);
+  const wc = Number(weekCompleted);
   const currentWeek = getCurrentISOWeek();
-  const w = Number(week);
 
-  if (!isNaN(w) && currentWeek > w) return "Delay";
+  const hasDateCompleted =
+    typeof dateCompleted === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dateCompleted);
+
+  /* =========================
+     1️⃣ DATE COMPLETED SUDAH ADA
+  ========================= */
+  if (hasDateCompleted && !isNaN(w) && !isNaN(wc)) {
+
+    // ✅ DONE hanya jika weekCompleted == week
+    if (wc === w) {
+      return "Done";
+    }
+
+    // ❌ REJECT jika beda minggu
+    return "Reject";
+  }
+
+  /* =========================
+     2️⃣ DATE COMPLETED BELUM ADA
+  ========================= */
+
+  // ⏱ DELAY jika sudah lewat minggu
+  if (!isNaN(w) && currentWeek > w) {
+    return "Delay";
+  }
+
+  // ⏳ DEFAULT
   return "Ongoing";
 }
+
+
 
 onValue(ref(db, "preventive-maintenance"), async snap => {
   cache = [];
@@ -442,7 +484,7 @@ onValue(ref(db, "preventive-maintenance"), async snap => {
 
   // 🔥 AUTO RECALC STATUS (AMAN, 1x)
   for (const r of cache) {
-    const newStatus = computeStatus(r.week, r.dateCompleted);
+    const newStatus = computeStatus(r.week, r.dateCompleted,r.weekCompleted);
     if (r.status !== newStatus) {
       await update(ref(db, `preventive-maintenance/${r.key}`), {
         status: newStatus,
@@ -469,6 +511,7 @@ onValue(ref(db, "preventive-maintenance"), async snap => {
 function renderPerformanceCharts() {
 
   /* ========= TECHNICIAN ========= */
+   /* ================= TECHNICIAN ================= */
   const techDiv = document.getElementById("techPerformanceChart");
   techDiv.innerHTML = "";
 
@@ -476,31 +519,54 @@ function renderPerformanceCharts() {
 
   cache.forEach(r => {
     if (!r.responsible) return;
+
     if (!techMap[r.responsible]) {
-      techMap[r.responsible] = { total: 0, done: 0 };
+      techMap[r.responsible] = {
+        total: 0,
+        done: 0,
+        ongoing: 0,
+        delay: 0,
+        reject: 0
+      };
     }
+
     techMap[r.responsible].total++;
-    techMap[r.responsible].done += Number(r.pointSummary || 0);
+
+    const status = computeStatus(r.week, r.dateCompleted, r.weekCompleted)
+    if (status === "Done") techMap[r.responsible].done++;
+    else if (status === "Reject") techMap[r.responsible].reject++;
+    else if (status === "Delay") techMap[r.responsible].delay++;
+    else techMap[r.responsible].ongoing++;
   });
 
   Object.entries(techMap).forEach(([name, v]) => {
-    const pct = Math.round((v.done / v.total) * 100);
+    const pct = v.total
+      ? Math.round((v.done / v.total) * 100)
+      : 0;
+
+    const donePct    = v.total ? (v.done / v.total) * 100 : 0;
+    const ongoingPct = v.total ? (v.ongoing / v.total) * 100 : 0;
+    const delayPct   = v.total ? (v.delay / v.total) * 100 : 0;
+    const rejectPct  = v.total ? (v.reject / v.total) * 100 : 0;
+
 
     techDiv.innerHTML += `
       <div class="tech-row">
         <div class="tech-name">${name}</div>
 
-        <div class="tech-bar-wrap">
-          <div class="tech-bar-bg">
-            <div class="tech-bar-fill" style="width:${pct}%"></div>
-          </div>
+        <div class="tech-bar-bg">
+          <div class="tech-bar done"    style="width:${donePct}%"></div>
+          <div class="tech-bar ongoing" style="width:${ongoingPct}%"></div>
+          <div class="tech-bar delay"   style="width:${delayPct}%"></div>
+          <div class="tech-bar reject"  style="width:${rejectPct}%"></div>
         </div>
+
 
         <div class="tech-percent">${pct}%</div>
       </div>
     `;
-
   });
+
 
 
   /* ========= MONTH ========= */

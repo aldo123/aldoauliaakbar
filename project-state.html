@@ -11,72 +11,135 @@
 
 <body>
 <!-- pROJECT STATE -->
-  <div class="project-state-wrapper p-3">
-    <h4 class="fw-bold mb-3">Project State — Engineering Summary</h4>
-    
-    <div class="row g-3 align-items-start">
-      <div class="col-lg-6">
-        <div class="chart-card">
-          <h6 class="chart-title">Engineer Task Status</h6>
-          <div class="chart-container-h" id="engineerChartContainer">
-            <canvas id="chartEngineer"></canvas>
-          </div>
-        </div>
+  <!-- PROJECT STATE -->
+<div class="project-state-wrapper p-3">
+  <h4 class="fw-bold mb-3">Project State — Engineering Summary</h4>
+
+  <!-- ================= ROW 1 : CHARTS ================= -->
+<div class="row g-3 align-items-stretch">
+
+  <div class="col-lg-4 d-flex">
+    <div class="chart-card equal-card w-100">
+      <h6 class="chart-title">Engineer Task Status</h6>
+      <div class="chart-container-h">
+        <canvas id="chartEngineer" width="520" height="220"></canvas>
       </div>
-
-      <div class="col-lg-4">
-        <div class="chart-card">
-          <h6 class="chart-title">Project Type Status</h6>
-          <div class="chart-container-v" id="typeChartContainer">
-            <canvas id="chartType"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-2">
-        <div class="chart-card donut-card">
-          <h6 class="chart-title">Engineer Performance</h6>
-
-          <div id="donutTaskInfo" style="color:#d9ffd8; font-size:13px; margin-bottom:4px; font-weight:600; text-align:center;">
-          <!-- Updated by JS -->
-          </div>
-
-          <div class="donut-wrap">
-            <canvas id="chartDonut"></canvas>
-            <div class="donut-center" id="donutCenterLabel">0%</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PR / PO SUMMARY (FORCED LEFT) -->
-      <div class="row prpo-row mt-2">
-        <div class="col-auto">
-          <div class="pr-card">
-            <div class="pr-icon">⚠️</div>
-            <div class="pr-info">
-              <h6>PR/PO Overdue</h6>
-              <h2 id="prOverdueCount">0</h2>
-              <small>task</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-auto">
-          <div class="prongoing-card">
-            <div class="pr-icon">⏳</div>
-            <div class="pr-info">
-              <h6>PR/PO Ongoing</h6>
-              <h2 id="prOngoingCount">0</h2>
-              <small>task</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      
     </div>
   </div>
+
+  <div class="col-lg-3 d-flex">
+    <div class="chart-card equal-card w-100">
+      <h6 class="chart-title">Project Type Status</h6>
+      <div class="chart-container-v">
+        <canvas id="chartType" width="360" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 d-flex">
+    <div class="chart-card donut-card equal-card w-100">
+      <h6 class="chart-title">Engineer Performance</h6>
+
+      <div id="donutTaskInfo"></div>
+
+      <div class="donut-wrap">
+        <canvas id="chartDonut" width="160" height="160"></canvas>
+        <div class="donut-center" id="donutCenterLabel">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ TECHNICIAN PERFORMANCE -->
+  <div class="col-lg-3 d-flex">
+    <div class="card shadow-sm equal-card w-100">
+      <div class="card-header fw-bold">Technician Performance</div>
+
+      <!-- 🔥 INI YANG AKHIRNYA SCROLL -->
+      <div class="tech-scroll" style="max-height:230px;">
+        <div id="techPerformanceChart"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- ================= END ROW 1 ================= -->
+
+
+  <!-- ================= ROW 2 : PR / PO & PM ================= -->
+  <div class="row prpo-row mt-3">
+
+    <div class="col-auto">
+      <div class="pr-card">
+        <div class="pr-icon">⚠️</div>
+        <div class="pr-info">
+          <h6>PR/PO Overdue</h6>
+          <h2 id="prOverdueCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <div class="prongoing-card">
+        <div class="pr-icon">⏳</div>
+        <div class="pr-info">
+          <h6>PR/PO Ongoing</h6>
+          <h2 id="prOngoingCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <div class="pmoverdue-card">
+        <div class="pm-icon">⚠️</div>
+        <div class="pm-info">
+          <h6>PM Overdue</h6>
+          <h2 id="pmOverdueCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <div class="pmongoing-card">
+        <div class="pm-icon">⏳</div>
+        <div class="pm-info">
+          <h6>PM Ongoing</h6>
+          <h2 id="pmOngoingCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <div class="pmdone-card">
+        <div class="pm-icon">✔️</div>
+        <div class="pm-info">
+          <h6>PM Done</h6>
+          <h2 id="pmDoneCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-auto">
+      <div class="pmreject-card">
+        <div class="pm-icon">✖️</div>
+        <div class="pm-info">
+          <h6>PM Reject</h6>
+          <h2 id="pmRejectCount">0</h2>
+          <small>task</small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- ================= END ROW 2 ================= -->
+
+</div>
+<!-- END PROJECT STATE -->
+
 
   <!-- CALIBRATION -->
   <div class="calibration-wrapper">
@@ -264,6 +327,7 @@
   
 <!-- loaded as module -->
 <script type="module" src="project-state.js"></script>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
