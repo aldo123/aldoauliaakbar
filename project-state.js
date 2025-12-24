@@ -644,6 +644,13 @@ onValue(ref(db, "preventive-maintenance"), snap => {
   if (!container) return;
 
   container.innerHTML = "";
+
+  // 🔥 GLOBAL COUNTER
+  let pmDone = 0;
+  let pmOngoing = 0;
+  let pmDelay = 0;
+  let pmReject = 0;
+
   if (!snap.exists()) return;
 
   const map = {};
@@ -651,12 +658,24 @@ onValue(ref(db, "preventive-maintenance"), snap => {
   Object.values(snap.val()).forEach(r => {
     if (!r.responsible) return;
 
+    // ======================
+    // HITUNG STATUS
+    // ======================
+    const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+
+    if (st === "Done") pmDone++;
+    else if (st === "Reject") pmReject++;
+    else if (st === "Delay") pmDelay++;
+    else pmOngoing++;
+
+    // ======================
+    // TECHNICIAN PERFORMANCE
+    // ======================
     if (!map[r.responsible]) {
       map[r.responsible] = { total:0, done:0, ongoing:0, delay:0, reject:0 };
     }
 
     map[r.responsible].total++;
-    const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
 
     if (st === "Done") map[r.responsible].done++;
     else if (st === "Reject") map[r.responsible].reject++;
@@ -664,6 +683,22 @@ onValue(ref(db, "preventive-maintenance"), snap => {
     else map[r.responsible].ongoing++;
   });
 
+  // ======================
+  // UPDATE PM SUMMARY CARDS
+  // ======================
+  const elDone = document.getElementById("pmDoneCount");
+  const elOngoing = document.getElementById("pmOngoingCount");
+  const elOverdue = document.getElementById("pmOverdueCount");
+  const elReject = document.getElementById("pmRejectCount");
+
+  if (elDone) elDone.textContent = pmDone;
+  if (elOngoing) elOngoing.textContent = pmOngoing;
+  if (elOverdue) elOverdue.textContent = pmDelay;
+  if (elReject) elReject.textContent = pmReject;
+
+  // ======================
+  // RENDER TECH PERFORMANCE
+  // ======================
   Object.entries(map).forEach(([name,v]) => {
     const total = v.total || 1;
     const pct = Math.round(v.done / total * 100);
