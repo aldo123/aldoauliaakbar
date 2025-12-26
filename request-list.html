@@ -14,6 +14,43 @@
 
 <body>
 
+<!-- ================= PR/PO INDICATOR GRID ================= -->
+<div class="prpo-grid">
+  <div class="prpo-card overdue" id="cardPrOverdue">
+    <div class="prpo-icon">⚠️</div>
+    <div class="prpo-info">
+      <span class="label">PR/PO Overdue</span>
+      <span class="value" id="prOverdueCount">0</span>
+    </div>
+  </div>
+
+  <div class="prpo-card ongoing" id="cardPrOngoing">
+    <div class="prpo-icon">⏳</div>
+    <div class="prpo-info">
+      <span class="label">PR/PO Ongoing</span>
+      <span class="value" id="prOngoingCount">0</span>
+    </div>
+  </div>
+
+  <div class="prpo-card done" id="cardPrDone">
+    <div class="prpo-icon">✔️</div>
+    <div class="prpo-info">
+      <span class="label">PR/PO Done</span>
+      <span class="value" id="prDoneCount">0</span>
+    </div>
+  </div>
+
+  <div class="prpo-card cancelled" id="cardPrCancelled">
+    <div class="prpo-icon">✖️</div>
+    <div class="prpo-info">
+      <span class="label">PR/PO Cancelled</span>
+      <span class="value" id="prCancelledCount">0</span>
+    </div>
+  </div>
+</div>
+
+
+
 <div class="request-wrapper">
 
   <!-- HEADER -->

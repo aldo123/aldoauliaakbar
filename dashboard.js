@@ -486,9 +486,48 @@ function openTab(pageKey, title){
     if (pageKey === "calibration") loadcalibration();
     if (pageKey === "technician-performance") loadtechnician();
     if (pageKey === "traceability") traceabilitysn();});
-  tab.querySelector(".close-tab").addEventListener("click", (e)=>{ e.stopPropagation(); tab.remove(); const lastTab=document.querySelector(".tab:last-child"); 
-    if (lastTab) setActiveTab(lastTab.dataset.page); else showWelcomePage(); });
+  tab.querySelector(".close-tab").addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const isActive = tab.classList.contains("active");
+    const prevTab = tab.previousElementSibling;
+    const nextTab = tab.nextElementSibling;
+
+    tab.remove();
+
+    if (!isActive) return;
+
+    if (nextTab) {
+      activateTabWithLoader(nextTab.dataset.page);
+    } else if (prevTab) {
+      activateTabWithLoader(prevTab.dataset.page);
+    } else {
+      showWelcomePage();
+    }
+  });
 }
+
+function activateTabWithLoader(pageKey) {
+  setActiveTab(pageKey);
+
+  // 🔥 trigger loader sesuai page
+  if (pageKey === "project-state") loadProjectStateModule();
+  else if (pageKey === "oee-tpm") loadOEETPMModule();
+  else if (pageKey === "equipment-fpy") loadMESReport();
+  else if (pageKey === "equipment-downtime") loadRSA();
+  else if (pageKey === "defect") loadDefectReport();
+  else if (pageKey === "maintenance-plan") loadPMReport();
+  else if (pageKey === "part-list") loadpartlist();
+  else if (pageKey === "inout") loadInOut();
+  else if (pageKey === "storage") loadstorage();
+  else if (pageKey === "request-list") loadrequestlist();
+  else if (pageKey === "equipmentlist") loadequipmentlist();
+  else if (pageKey === "calibration") loadcalibration();
+  else if (pageKey === "technician-performance") loadtechnician();
+  else if (pageKey === "traceability") traceabilitysn();
+}
+
+
 function setActiveTab(pageKey){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   const tab = document.querySelector(`.tab[data-page="${pageKey}"]`); if (tab) tab.classList.add("active");

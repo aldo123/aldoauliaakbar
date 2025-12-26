@@ -80,7 +80,7 @@ onValue(ref(db, "request-list"), snap => {
   }
   populateFilters();   // 🔥 WAJIB
   render();
-  countRequestStatus();
+  updatePrPoIndicator(cache); // 🔥 INI YANG BENAR
 });
 
 
@@ -568,3 +568,54 @@ const excelDate = v => {
   }
   return "";
 };
+
+function updatePrPoIndicator(rows) {
+  let overdue = 0;
+  let ongoing = 0;
+  let done = 0;
+  let cancelled = 0;
+
+  rows.forEach(r => {
+    const status = computeStatus(r);
+
+    switch (status) {
+      case "Delay":
+        overdue++;
+        break;
+      case "Ongoing":
+        ongoing++;
+        break;
+      case "Done":
+        done++;
+        break;
+      case "Cancelled":
+        cancelled++;
+        break;
+    }
+  });
+
+  const elOverdue   = document.getElementById("prOverdueCount");
+  const elOngoing   = document.getElementById("prOngoingCount");
+  const elDone      = document.getElementById("prDoneCount");
+  const elCancelled = document.getElementById("prCancelledCount");
+
+  if (elOverdue)   elOverdue.textContent   = overdue;
+  if (elOngoing)   elOngoing.textContent   = ongoing;
+  if (elDone)      elDone.textContent      = done;
+  if (elCancelled) elCancelled.textContent = cancelled;
+}
+
+const bindCardFilter = (cardId, status) => {
+  const el = document.getElementById(cardId);
+  if (!el) return;
+
+  el.addEventListener("click", () => {
+    filterStatus.value = status;
+    render();
+  });
+};
+
+bindCardFilter("cardPrOverdue", "Delay");
+bindCardFilter("cardPrOngoing", "Ongoing");
+bindCardFilter("cardPrDone", "Done");
+bindCardFilter("cardPrCancelled", "Cancelled");

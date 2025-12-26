@@ -730,7 +730,8 @@ async function getPrPoOverdueList() {
     if (status === "Delay") {
       list.push({
         pr: r.oaPr || "-",
-        desc: r.description || r.item || r.partName || "No description"
+        desc: r.description || r.item || r.partName || "No description",
+        info: r.information || "-" 
       });
     }
   });
@@ -753,7 +754,8 @@ if (prCard) {
       html += `
         <div class="item">
           <div class="pr">${i.pr}</div>
-          <div>${i.desc}</div>
+          <div>${i.desc}</div> 
+          <div class="info">📝 ${i.info}</div>
         </div>`;
     });
 
@@ -789,7 +791,8 @@ async function getPrPoOngoingList() {
     if (status === "Ongoing") {
       list.push({
         pr: r.oaPr || "-",
-        desc: r.description || r.item || r.partName || "No description"
+        desc: r.description || r.item || r.partName || "No description",
+        info: r.information || "-" 
       });
     }
   });
@@ -812,6 +815,7 @@ if (prOngoingCard) {
         <div class="item">
           <div class="pr">${i.pr}</div>
           <div>${i.desc}</div>
+          <div class="info">📝 ${i.info}</div>
         </div>`;
     });
 
