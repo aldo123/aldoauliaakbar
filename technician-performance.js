@@ -84,6 +84,8 @@ function render() {
   const fs = filterStatus.value;
 
   const filtered = cache.filter(r => {
+    const w = Number(r.week);
+    if (!r.week || isNaN(w) || w <= 0) return false;
     const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
 
 
@@ -97,6 +99,7 @@ function render() {
   });
 
   filtered.forEach((r, i) => {
+    
     const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
 
     let statusBadge = "";
@@ -473,26 +476,55 @@ function computeStatus(week, dateCompleted, weekCompleted) {
 
 
 
-onValue(ref(db, "preventive-maintenance"), async snap => {
+onValue(ref(db, "preventive-maintenance"), snap => {
   cache = [];
+
+  // ======================
+  // PM GLOBAL COUNTER
+  // ======================
+  let pmDone = 0;
+  let pmOngoing = 0;
+  let pmOverdue = 0;
+  let pmReject = 0;
 
   if (snap.exists()) {
     Object.entries(snap.val()).forEach(([k, v]) => {
-      cache.push({ key: k, ...v });
-    });
+
+    const w = Number(v.week);
+    if (!v.week || isNaN(w) || w <= 0) return; // ⛔ SKIP PM TANPA WEEK
+
+    const liveStatus = computeStatus(
+      v.week,
+      v.dateCompleted,
+      v.weekCompleted
+    );
+
+    cache.push({ key: k, ...v, _liveStatus: liveStatus });
+
+    if (liveStatus === "Done") pmDone++;
+    else if (liveStatus === "Delay") pmOverdue++;
+    else if (liveStatus === "Reject") pmReject++;
+    else pmOngoing++;
+  });
+
   }
 
-  // 🔥 AUTO RECALC STATUS (AMAN, 1x)
-  for (const r of cache) {
-    const newStatus = computeStatus(r.week, r.dateCompleted,r.weekCompleted);
-    if (r.status !== newStatus) {
-      await update(ref(db, `preventive-maintenance/${r.key}`), {
-        status: newStatus,
-        updatedAt: new Date().toISOString()
-      });
-    }
-  }
+  // ======================
+  // UPDATE DASHBOARD CARD
+  // ======================
+  const elDone     = document.getElementById("pmDoneCount");
+  const elOngoing  = document.getElementById("pmOngoingCount");
+  const elOverdue  = document.getElementById("pmOverdueCount");
+  const elReject   = document.getElementById("pmRejectCount");
 
+  if (elDone)    elDone.textContent = pmDone;
+  if (elOngoing) elOngoing.textContent = pmOngoing;
+  if (elOverdue) elOverdue.textContent = pmOverdue;
+  if (elReject)  elReject.textContent = pmReject;
+
+  // ======================
+  // EXISTING FLOW (AMAN)
+  // ======================
   populateFilters();
 
   const currentWeek = getCurrentISOWeek();
@@ -502,15 +534,62 @@ onValue(ref(db, "preventive-maintenance"), async snap => {
 
   render();
 
-  // 🔥 chart setelah DOM siap
   requestAnimationFrame(renderPerformanceCharts);
 });
+
+const tooltip = document.getElementById("ps-tooltip");
+
+function showPmTooltip(e, statusType) {
+  const map = {};
+
+  cache.forEach(r => {
+    const w = Number(r.week);
+    if (!r.week || isNaN(w) || w <= 0) return;
+
+    const status = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+    if (status !== statusType) return;
+
+    const name = r.responsible || "Unknown";
+    map[name] = (map[name] || 0) + 1;
+  });
+
+  let html = `<h6>${statusType} by Responsible</h6><ul>`;
+  Object.entries(map)
+    .sort((a,b) => b[1] - a[1])
+    .forEach(([name, total]) => {
+      html += `<li><span>${name}</span><strong>${total}</strong></li>`;
+    });
+
+  html += `</ul>`;
+
+  tooltip.innerHTML = html;
+  tooltip.style.left = e.clientX + 15 + "px";
+  tooltip.style.top  = e.clientY + 15 + "px";
+  tooltip.style.opacity = 1;
+}
+
+function hideTooltip() {
+  tooltip.style.opacity = 0;
+}
+
+const bindTooltip = (id, status) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  el.addEventListener("mousemove", e => showPmTooltip(e, status));
+  el.addEventListener("mouseleave", hideTooltip);
+};
+
+bindTooltip("cardPmOverdue", "Delay");
+bindTooltip("cardPmOngoing", "Ongoing");
+bindTooltip("cardPmDone", "Done");
+bindTooltip("cardPmReject", "Reject");
+
 
 
 
 function renderPerformanceCharts() {
 
-  /* ========= TECHNICIAN ========= */
    /* ================= TECHNICIAN ================= */
   const techDiv = document.getElementById("techPerformanceChart");
   techDiv.innerHTML = "";
@@ -520,6 +599,10 @@ function renderPerformanceCharts() {
   cache.forEach(r => {
     if (!r.responsible) return;
 
+    const w = Number(r.week);
+    if (!r.week || isNaN(w) || w <= 0) return;
+
+    // 🔥 WAJIB ADA INI
     if (!techMap[r.responsible]) {
       techMap[r.responsible] = {
         total: 0,
@@ -532,12 +615,13 @@ function renderPerformanceCharts() {
 
     techMap[r.responsible].total++;
 
-    const status = computeStatus(r.week, r.dateCompleted, r.weekCompleted)
+    const status = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
     if (status === "Done") techMap[r.responsible].done++;
     else if (status === "Reject") techMap[r.responsible].reject++;
     else if (status === "Delay") techMap[r.responsible].delay++;
     else techMap[r.responsible].ongoing++;
   });
+
 
   Object.entries(techMap).forEach(([name, v]) => {
     const pct = v.total

@@ -803,3 +803,75 @@ body {
 .chart-card {
   backdrop-filter: none !important;
 }
+
+.ps-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #083c1f;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  min-width: 280px;
+  max-width: 360px;
+
+  /* 🔥 TAMBAHAN */
+  max-height: 500px;
+  overflow-y: auto;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+  display: none;
+}
+
+
+.ps-tooltip .title {
+  font-weight: 700;
+  color: #9fffc4;
+  margin-bottom: 6px;
+}
+
+.ps-tooltip .item {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(255,255,255,0.15);
+}
+
+.ps-tooltip .item:last-child {
+  border-bottom: none;
+}
+
+.ps-tooltip .pr {
+  font-weight: 600;
+  color: #ffdcdc;
+}
+
+/* ===============================
+   INDICATOR GRID 1 x 6
+================================ */
+.indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+
+.indicator-grid > div {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  color: #fff;
+}
+
+/* Responsive fallback */
+@media (max-width: 1400px) {
+  .indicator-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .indicator-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

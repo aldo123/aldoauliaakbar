@@ -12,31 +12,55 @@
 <body>
 
 
-<div class="row mb-4">
+<!-- ================= DASHBOARD TOP ROW ================= -->
+<div class="dashboard-top-row">
 
-  <!-- TECHNICIAN -->
-  <div class="col-md-6">
-    <div class="card shadow-sm equal-card">
-      <div class="card-header fw-bold">Technician Performance</div>
-
-      <div class="tech-scroll">
-        <div id="techPerformanceChart"></div>
-      </div>
+  <!-- TECHNICIAN PERFORMANCE -->
+  <div class="dash-card dash-tech">
+    <div class="dash-card-header">Technician Performance</div>
+    <div class="dash-card-body tech-scroll">
+      <div id="techPerformanceChart"></div>
     </div>
   </div>
 
-  <!-- MONTH -->
-  <div class="col-md-6">
-    <div class="card shadow-sm equal-card">
-      <div class="card-header fw-bold">% Execution by Month</div>
+  <!-- EXECUTION BY MONTH -->
+  <div class="dash-card dash-month">
+    <div class="dash-card-header">% Execution by Month</div>
+    <div class="dash-card-body month-scroll">
+      <div id="executionMonthChart"></div>
+    </div>
+  </div>
 
-      <div class="month-scroll">
-        <div id="executionMonthChart"></div>
+  <!-- PM INDICATORS -->
+  <div class="dash-card dash-pm">
+    <div class="pm-indicator-grid">
+
+      <div class="pm-indicator overdue" id="cardPmOverdue">
+        <span>⚠️ PM Overdue</span>
+        <strong id="pmOverdueCount">0</strong>
       </div>
+
+      <div class="pm-indicator ongoing" id="cardPmOngoing">
+        <span>⏳ PM Ongoing</span>
+        <strong id="pmOngoingCount">0</strong>
+      </div>
+
+      <div class="pm-indicator done" id="cardPmDone">
+        <span>✔️ PM Done</span>
+        <strong id="pmDoneCount">0</strong>
+      </div>
+
+      <div class="pm-indicator reject" id="cardPmReject">
+        <span>✖️ PM Reject</span>
+        <strong id="pmRejectCount">0</strong>
+      </div>
+
     </div>
   </div>
 
 </div>
+
+
 
 
 <div class="pm-wrapper">
@@ -177,6 +201,7 @@
   </div>
 </div>
 
+<div id="ps-tooltip" class="ps-tooltip"></div>
 
 
 <!-- Module JS kamu -->

@@ -1,251 +1,187 @@
-<!-- project-state.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WIK BT - TPM | Executive Dashboard</title>
+
   <link rel="stylesheet" href="project-state.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body>
-<!-- pROJECT STATE -->
-  <!-- PROJECT STATE -->
+
+<!-- ================= DASHBOARD SCALE WRAPPER ================= -->
+<div class="dashboard-scale">
+
+<!-- ================= PROJECT STATE ================= -->
 <div class="project-state-wrapper p-3">
   <h4 class="fw-bold mb-3">Project State — Engineering Summary</h4>
 
-  <!-- ================= ROW 1 : CHARTS ================= -->
-<div class="row g-3 align-items-stretch">
+  <!-- ROW 1 -->
+  <div class="row g-3 align-items-stretch">
 
-  <div class="col-lg-4 d-flex">
-    <div class="chart-card equal-card w-100">
-      <h6 class="chart-title">Engineer Task Status</h6>
-      <div class="chart-container-h">
-        <canvas id="chartEngineer" width="520" height="220"></canvas>
+    <div class="col-lg-4 d-flex">
+      <div class="chart-card equal-card w-100">
+        <h6 class="chart-title">Engineer Task Status</h6>
+        <div class="chart-container-h">
+          <canvas id="chartEngineer" width="520" height="220"></canvas>
+        </div>
       </div>
     </div>
+
+    <div class="col-lg-3 d-flex">
+      <div class="chart-card equal-card w-100">
+        <h6 class="chart-title">Project Type Status</h6>
+        <div class="chart-container-v">
+          <canvas id="chartType" width="360" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 d-flex">
+      <div class="chart-card donut-card equal-card w-100">
+        <h6 class="chart-title">Engineer Performance</h6>
+        <div id="donutTaskInfo"></div>
+        <div class="donut-wrap">
+          <canvas id="chartDonut" width="160" height="160"></canvas>
+          <div class="donut-center" id="donutCenterLabel">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 d-flex">
+      <div class="card shadow-sm equal-card w-100">
+        <div class="card-header fw-bold">Technician Performance</div>
+        <div class="tech-scroll" style="max-height:230px;">
+          <div id="techPerformanceChart"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="col-lg-3 d-flex">
-    <div class="chart-card equal-card w-100">
-      <h6 class="chart-title">Project Type Status</h6>
-      <div class="chart-container-v">
-        <canvas id="chartType" width="360" height="220"></canvas>
+  <!-- ROW 2 -->
+  <!-- ROW 2 : INDICATOR GRID -->
+  <div class="indicator-grid mt-3">
+
+    <div class="pr-card" id="cardPrPoOverdue">
+      <div class="pr-icon">⚠️</div>
+      <div class="pr-info">
+        <h6>PR/PO Overdue</h6>
+        <h2 id="prOverdueCount">0</h2>
+        <small>task</small>
       </div>
     </div>
-  </div>
 
-  <div class="col-lg-2 d-flex">
-    <div class="chart-card donut-card equal-card w-100">
-      <h6 class="chart-title">Engineer Performance</h6>
-
-      <div id="donutTaskInfo"></div>
-
-      <div class="donut-wrap">
-        <canvas id="chartDonut" width="160" height="160"></canvas>
-        <div class="donut-center" id="donutCenterLabel">0%</div>
+    <div class="prongoing-card" id="cardPrPoOngoing">
+      <div class="pr-icon">⏳</div>
+      <div class="pr-info">
+        <h6>PR/PO Ongoing</h6>
+        <h2 id="prOngoingCount">0</h2>
+        <small>task</small>
       </div>
     </div>
-  </div>
 
-  <!-- ✅ TECHNICIAN PERFORMANCE -->
-  <div class="col-lg-3 d-flex">
-    <div class="card shadow-sm equal-card w-100">
-      <div class="card-header fw-bold">Technician Performance</div>
-
-      <!-- 🔥 INI YANG AKHIRNYA SCROLL -->
-      <div class="tech-scroll" style="max-height:230px;">
-        <div id="techPerformanceChart"></div>
+    <div class="pmoverdue-card" id="cardPmOverdue">
+      <div class="pm-icon">⚠️</div>
+      <div class="pm-info">
+        <h6>PM Overdue</h6>
+        <h2 id="pmOverdueCount">0</h2>
+        <small>task</small>
       </div>
     </div>
+
+    <div class="pmongoing-card" id="cardPmOngoing">
+      <div class="pm-icon">⏳</div>
+      <div class="pm-info">
+        <h6>PM Ongoing</h6>
+        <h2 id="pmOngoingCount">0</h2>
+        <small>task</small>
+      </div>
+    </div>
+
+    <div class="pmdone-card">
+      <div class="pm-icon">✔️</div>
+      <div class="pm-info">
+        <h6>PM Done</h6>
+        <h2 id="pmDoneCount">0</h2>
+        <small>task</small>
+      </div>
+    </div>
+
+    <div class="pmreject-card">
+      <div class="pm-icon">✖️</div>
+      <div class="pm-info">
+        <h6>PM Reject</h6>
+        <h2 id="pmRejectCount">0</h2>
+        <small>task</small>
+      </div>
+    </div>
+
   </div>
 
 </div>
-<!-- ================= END ROW 1 ================= -->
+<!-- ================= END PROJECT STATE ================= -->
 
 
-  <!-- ================= ROW 2 : PR / PO & PM ================= -->
-  <div class="row prpo-row mt-3">
-
-    <div class="col-auto">
-      <div class="pr-card">
-        <div class="pr-icon">⚠️</div>
-        <div class="pr-info">
-          <h6>PR/PO Overdue</h6>
-          <h2 id="prOverdueCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-auto">
-      <div class="prongoing-card">
-        <div class="pr-icon">⏳</div>
-        <div class="pr-info">
-          <h6>PR/PO Ongoing</h6>
-          <h2 id="prOngoingCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-auto">
-      <div class="pmoverdue-card">
-        <div class="pm-icon">⚠️</div>
-        <div class="pm-info">
-          <h6>PM Overdue</h6>
-          <h2 id="pmOverdueCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-auto">
-      <div class="pmongoing-card">
-        <div class="pm-icon">⏳</div>
-        <div class="pm-info">
-          <h6>PM Ongoing</h6>
-          <h2 id="pmOngoingCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-auto">
-      <div class="pmdone-card">
-        <div class="pm-icon">✔️</div>
-        <div class="pm-info">
-          <h6>PM Done</h6>
-          <h2 id="pmDoneCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-auto">
-      <div class="pmreject-card">
-        <div class="pm-icon">✖️</div>
-        <div class="pm-info">
-          <h6>PM Reject</h6>
-          <h2 id="pmRejectCount">0</h2>
-          <small>task</small>
-        </div>
-      </div>
-    </div>
-
+<!-- ================= CALIBRATION ================= -->
+<div class="calibration-wrapper">
+  <div class="calibration-header">
+    <h4>🧪 Calibration Schedule</h4>
   </div>
-  <!-- ================= END ROW 2 ================= -->
 
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="summary-card ok">
+        <h6>Calibrated</h6>
+        <span id="okCount">0</span> Equipment
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="summary-card due">
+        <h6>Due Soon</h6>
+        <span id="dueCount">0</span> Equipment
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="summary-card overdue">
+        <h6>Overdue</h6>
+        <span id="overdueCount">0</span> Equipment
+      </div>
+    </div>
+  </div>
+
+  <div class="calibration-table-wrapper">
+    <table class="table calibration-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Group Equipment</th>
+          <th>SN</th>
+          <th>Last Calibration</th>
+          <th>Next Due</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="calibrationBody"></tbody>
+    </table>
+  </div>
 </div>
-<!-- END PROJECT STATE -->
 
 
-  <!-- CALIBRATION -->
-  <div class="calibration-wrapper">
+<!-- ================= SPARE PART ================= -->
+<div class="spm-wrapper">
 
-    <!-- HEADER -->
-    <div class="calibration-header">
-      <h4>🧪 Calibration Schedule</h4>
-    </div>
-
-    <!-- SUMMARY -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-4">
-        <div class="summary-card ok">
-          <h6>
-            <i class="bi bi-check-circle-fill me-1"></i>
-            Calibrated
-          </h6>
-          <span id="okCount">0</span> Equipment
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="summary-card due">
-          <h6>
-            <i class="bi bi-clock-fill me-1"></i>
-            Due Soon
-          </h6>
-          <span id="dueCount">0</span> Equipment
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="summary-card overdue">
-          <h6>
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            Overdue
-          </h6>
-          <span id="overdueCount">0</span> Equipment
-        </div>
-      </div>
-    </div>
-
-    <!-- TABLE -->
-    <div class="calibration-table-wrapper">
-      <table class="table calibration-table">
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Group Equipment</th>
-            <th>SN</th>
-            <th>Last Calibration</th>
-            <th>Next Due</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="calibrationBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- MODAL -->
-  <div class="modal fade" id="calibrationModal" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h6 class="modal-title">Mark as Calibrated</h6>
-          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-
-        <div class="modal-body">
-          <input type="hidden" id="editIndex">
-
-          <div class="mb-2">
-            <label>Calibration Date</label>
-            <input type="date" id="calDate" class="form-control">
-          </div>
-
-          <div class="mb-2">
-            <label>Remarks</label>
-            <input id="calRemark" class="form-control">
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-success" id="saveCalibration">Confirm</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SPAREPART -->
-  <div class="spm-wrapper">
-
-  <!-- HEADER -->
   <div class="spm-header">
     <h3>🛠️ Spare Part Management</h3>
   </div>
 
-  <!-- SUMMARY CARDS -->
   <div class="row g-4 mb-4 spm-summary">
 
-    <!-- Incoming -->
     <div class="col-md-3">
       <div class="spm-card incoming">
-        <div class="spm-icon">
-          <i class="bi bi-box-arrow-in-down"></i>
-        </div>
+        <div class="spm-icon"><i class="bi bi-box-arrow-in-down"></i></div>
         <div class="spm-info">
           <h6>Incoming</h6>
           <h2><span id="incomingValue">0</span> <small>pcs</small></h2>
@@ -254,12 +190,9 @@
       </div>
     </div>
 
-    <!-- Outgoing -->
     <div class="col-md-3">
       <div class="spm-card outgoing">
-        <div class="spm-icon">
-          <i class="bi bi-box-arrow-up"></i>
-        </div>
+        <div class="spm-icon"><i class="bi bi-box-arrow-up"></i></div>
         <div class="spm-info">
           <h6>Outgoing</h6>
           <h2><span id="outgoingValue">0</span> <small>pcs</small></h2>
@@ -268,12 +201,9 @@
       </div>
     </div>
 
-    <!-- Low Stock -->
     <div class="col-md-3">
-      <div class="spm-card lowstock">
-        <div class="spm-icon">
-          <i class="bi bi-exclamation-triangle"></i>
-        </div>
+      <div class="spm-card lowstock" id="cardLowStock">
+        <div class="spm-icon"><i class="bi bi-exclamation-triangle"></i></div>
         <div class="spm-info">
           <h6>Low Stock</h6>
           <h2><span id="lowStockCount">0</span> <small>Items</small></h2>
@@ -282,12 +212,9 @@
       </div>
     </div>
 
-    <!-- Total SKU -->
     <div class="col-md-3">
       <div class="spm-card totalsku">
-        <div class="spm-icon">
-          <i class="bi bi-collection"></i>
-        </div>
+        <div class="spm-icon"><i class="bi bi-collection"></i></div>
         <div class="spm-info">
           <h6>Total Part</h6>
           <h2><span id="totalSkuValue2">0</span> / <span id="totalSkuValue">0</span><small> Items</small></h2>
@@ -298,37 +225,37 @@
 
   </div>
 
-  
-    <div class="card table-card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Transaction Log</h5>
-      </div>
-
-      
-      <div class="spm-table-wrapper">
-        <table class="table table-dark table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Date & Time</th>
-              <th>Part Name</th>
-              <th>IN/OUT</th>
-              <th>Quantity</th>
-              <th>PIC</th>
-              <th>Remarks</th>
-            </tr>
-          </thead>
-          <tbody id="logBody">
-            <!-- Filled by JS -->
-          </tbody>
-        </table>
-      </div>
+  <div class="card table-card">
+    <div class="card-header">
+      <h5 class="mb-0">Transaction Log</h5>
     </div>
-  
-<!-- loaded as module -->
+
+    <div class="spm-table-wrapper">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Date & Time</th>
+            <th>Part Name</th>
+            <th>IN/OUT</th>
+            <th>Quantity</th>
+            <th>PIC</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="ps-tooltip" class="ps-tooltip"></div>
+
+</div>
+<!-- ================= END DASHBOARD SCALE ================= -->
+
 <script type="module" src="project-state.js"></script>
-
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

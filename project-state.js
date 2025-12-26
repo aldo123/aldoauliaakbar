@@ -717,3 +717,297 @@ onValue(ref(db, "preventive-maintenance"), snap => {
     `;
   });
 });
+
+async function getPrPoOverdueList() {
+  const snap = await get(ref(db, "request-list"));
+  if (!snap.exists()) return [];
+
+  const list = [];
+
+  Object.values(snap.val()).forEach(r => {
+    const status = computeRequestStatus(r);
+
+    if (status === "Delay") {
+      list.push({
+        pr: r.oaPr || "-",
+        desc: r.description || r.item || r.partName || "No description"
+      });
+    }
+  });
+
+  return list;
+}
+
+const prCard = document.getElementById("cardPrPoOverdue");
+const tooltip = document.getElementById("ps-tooltip");
+
+if (prCard) {
+  let prData = [];
+
+  prCard.addEventListener("mouseenter", async (e) => {
+    prData = await getPrPoOverdueList();
+
+    let html = `<div class="title">PR/PO Overdue (${prData.length} task)</div>`;
+
+    prData.slice(0, 5).forEach(i => {
+      html += `
+        <div class="item">
+          <div class="pr">${i.pr}</div>
+          <div>${i.desc}</div>
+        </div>`;
+    });
+
+    if (prData.length > 5) {
+      html += `<div class="item">+${prData.length - 5} more...</div>`;
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+  });
+
+  prCard.addEventListener("mousemove", (e) => {
+    tooltip.style.left = e.pageX + 15 + "px";
+    tooltip.style.top = e.pageY + 15 + "px";
+  });
+
+  prCard.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
+}
+
+
+
+async function getPrPoOngoingList() {
+  const snap = await get(ref(db, "request-list"));
+  if (!snap.exists()) return [];
+
+  const list = [];
+
+  Object.values(snap.val()).forEach(r => {
+    const status = computeRequestStatus(r);
+
+    if (status === "Ongoing") {
+      list.push({
+        pr: r.oaPr || "-",
+        desc: r.description || r.item || r.partName || "No description"
+      });
+    }
+  });
+
+  return list;
+}
+
+const prOngoingCard = document.getElementById("cardPrPoOngoing");
+
+if (prOngoingCard) {
+  let prData = [];
+
+  prOngoingCard.addEventListener("mouseenter", async () => {
+    prData = await getPrPoOngoingList();
+
+    let html = `<div class="title">PR/PO Ongoing (${prData.length} task)</div>`;
+
+    prData.slice(0, 5).forEach(i => {
+      html += `
+        <div class="item">
+          <div class="pr">${i.pr}</div>
+          <div>${i.desc}</div>
+        </div>`;
+    });
+
+    if (prData.length > 5) {
+      html += `<div class="item">+${prData.length - 5} more...</div>`;
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+  });
+
+  prOngoingCard.addEventListener("mousemove", (e) => {
+    tooltip.style.left = e.pageX + 15 + "px";
+    tooltip.style.top = e.pageY + 15 + "px";
+  });
+
+  prOngoingCard.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
+}
+
+async function getPmOverdueByResponsible() {
+  const snap = await get(ref(db, "preventive-maintenance"));
+  if (!snap.exists()) return [];
+
+  const map = {};
+
+  Object.values(snap.val()).forEach(r => {
+    if (!r.responsible) return;
+
+    const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+    if (st !== "Delay") return; // 🔥 OVERDUE ONLY
+
+    if (!map[r.responsible]) map[r.responsible] = 0;
+    map[r.responsible]++;
+  });
+
+  // convert to sorted array
+  return Object.entries(map)
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+const pmOverdueCard = document.getElementById("cardPmOverdue");
+
+if (pmOverdueCard) {
+  let pmData = [];
+
+  pmOverdueCard.addEventListener("mouseenter", async () => {
+    pmData = await getPmOverdueByResponsible();
+
+    let html = `<div class="title">PM Overdue by Responsible</div>`;
+
+    if (pmData.length === 0) {
+      html += `<div class="item">No overdue PM</div>`;
+    } else {
+      pmData.forEach(i => {
+        html += `
+          <div class="item">
+            <div class="pr">${i.name}</div>
+            <div>${i.total} task</div>
+          </div>`;
+      });
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+  });
+
+
+  pmOverdueCard.addEventListener("mousemove", (e) => {
+    tooltip.style.left = e.pageX + 15 + "px";
+    tooltip.style.top = e.pageY + 15 + "px";
+  });
+
+  pmOverdueCard.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
+}
+
+async function getPmOngoingByResponsible() {
+  const snap = await get(ref(db, "preventive-maintenance"));
+  if (!snap.exists()) return [];
+
+  const map = {};
+
+  Object.values(snap.val()).forEach(r => {
+    if (!r.responsible) return;
+
+    const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+    if (st !== "Ongoing") return; // 🔥 ONGOING ONLY
+
+    if (!map[r.responsible]) map[r.responsible] = 0;
+    map[r.responsible]++;
+  });
+
+  return Object.entries(map)
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+const pmOngoingCard = document.getElementById("cardPmOngoing");
+
+
+if (pmOngoingCard) {
+  let pmData = [];
+
+  pmOngoingCard.addEventListener("mouseenter", async () => {
+    pmData = await getPmOngoingByResponsible();
+
+    let html = `<div class="title">PM Ongoing by Responsible</div>`;
+
+    if (pmData.length === 0) {
+      html += `<div class="item">No ongoing PM</div>`;
+    } else {
+      pmData.forEach(i => {
+        html += `
+          <div class="item">
+            <div class="pr">${i.name}</div>
+            <div>${i.total} task</div>
+          </div>`;
+      });
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+  });
+
+  pmOngoingCard.addEventListener("mousemove", (e) => {
+    tooltip.style.left = e.pageX + 15 + "px";
+    tooltip.style.top = e.pageY + 15 + "px";
+  });
+
+  pmOngoingCard.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
+}
+
+async function getLowStockParts() {
+  const snap = await get(ref(db, "storage"));
+  if (!snap.exists()) return [];
+
+  const list = [];
+
+  Object.values(snap.val()).forEach(p => {
+    const stock = Number(p.stock);
+    const min = Number(p.minStock);
+
+    if (isNaN(stock) || isNaN(min)) return;
+    if (stock >= min) return;
+
+    list.push({
+      name: p.partName || p.name || "-",
+      stock,
+      min
+    });
+  });
+
+  // 🔥 urutkan dari stock paling kecil
+  return list.sort((a, b) => a.stock - b.stock);
+}
+
+const lowStockCard = document.getElementById("cardLowStock");
+
+if (lowStockCard) {
+  let partData = [];
+
+  lowStockCard.addEventListener("mouseenter", async () => {
+    partData = await getLowStockParts();
+
+    let html = `<div class="title">Low Stock Parts</div>`;
+
+    if (partData.length === 0) {
+      html += `<div class="item">No low stock</div>`;
+    } else {
+      partData.forEach(p => {
+        html += `
+          <div class="item">
+            <div class="pr">${p.name}</div>
+            <div>Stock : ${p.stock}</div>
+            <div>Min&nbsp;&nbsp;&nbsp;: ${p.min}</div>
+          </div>`;
+      });
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = "block";
+  });
+
+  lowStockCard.addEventListener("mousemove", (e) => {
+    tooltip.style.left = e.pageX + 15 + "px";
+    tooltip.style.top = e.pageY + 15 + "px";
+  });
+
+  lowStockCard.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
+}
+

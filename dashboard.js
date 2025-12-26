@@ -109,6 +109,7 @@ function loadOEETPMModule() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -123,6 +124,7 @@ function traceabilitysn() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -137,6 +139,7 @@ function loadRSA() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -151,6 +154,7 @@ function loadMESReport() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -165,6 +169,7 @@ function loadPMReport() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -179,6 +184,7 @@ function loadtechnician() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -192,6 +198,7 @@ function loadrequestlist() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -205,6 +212,7 @@ function loadequipmentlist() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -218,6 +226,7 @@ function loadcalibration() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -231,6 +240,7 @@ function loadpartlist() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -244,6 +254,7 @@ function loadstorage() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       const script = document.createElement("script");
       script.type = "module";
@@ -257,6 +268,7 @@ function loadInOut() {
     .then(r => r.text())
     .then(html => {
       document.getElementById("main-content").innerHTML = html;
+      
 
       // CSS
       if (!document.getElementById("inout-css")) {
@@ -280,6 +292,7 @@ function loadDefectReport() {
       .then(res => res.text())
       .then(html => {
          document.getElementById("main-content").innerHTML = html;
+         
 
          // load CSS
          const link = document.createElement("link");
@@ -301,6 +314,7 @@ function loadProjectStateModule() {
     .then(html => {
 
       document.getElementById("main-content").innerHTML = html;
+      
 
       // inject CSS (cache-buster)
       const link = document.createElement("link");
@@ -481,13 +495,14 @@ function setActiveTab(pageKey){
   let contentHtml = pages[pageKey] || "<p>Page under development...</p>";
   if (pageKey && pageKey.startsWith("activity-")) contentHtml = pages["activity-tab-placeholder"];
   document.getElementById("main-content").innerHTML = `<div class="page active">${contentHtml}</div>`;
+  
   document.getElementById("page-title").textContent = pageKey ? pageKey.replace(/-/g," ").toUpperCase() : "";
   if (pageKey === "project-list"){ initFilterOptions(); renderProjectTable(); attachProjectSearchHandler(); }
   else if (pageKey === "open-list"){ initOpenListFilterOptions(); renderOpenList(); }
   else if (pageKey === "system-config"){ renderConfigTable(); }
   else if (pageKey && pageKey.startsWith("activity-")){ const pid = pageKey.split("-").slice(1).join("-"); renderActivityTableInTab(pid); }
 }
-function showWelcomePage(){ document.getElementById("main-content").innerHTML = `<div class="text-center p-4"><h4>Welcome to WIK-TPM Dashboard</h4><p>Select a menu from the sidebar to view content.</p></div>`; document.getElementById("page-title").textContent="Dashboard Overview"; }
+function showWelcomePage(){ document.getElementById("main-content").innerHTML = `<div class="text-center p-4"><h4>Welcome to WIK-TPM Dashboard</h4><p>Select a menu from the sidebar to view content.</p></div>`;  document.getElementById("page-title").textContent="Dashboard Overview"; }
 
 // Sidebar handler
 //document.querySelectorAll(".menu li[data-page]").forEach(item=>{ item.addEventListener("click", ()=>{ const key=item.getAttribute("data-page"); const title=item.textContent.trim(); openTab(key,title); if (key==="project-state") loadProjectStateModule(); }); });
@@ -1058,6 +1073,7 @@ function openConfigModal(key){ const modalEl=document.getElementById("configModa
 if (document.readyState === "complete" || document.readyState === "interactive") {
   if (document.getElementById("main-content") && document.getElementById("page-title")) {
     document.getElementById("main-content").innerHTML = `<div class="page active">${pages["project-list"]}</div>`;
+    
     document.getElementById("page-title").textContent = "PROJECT LIST";
     initFilterOptions();
     renderProjectTable();
