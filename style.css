@@ -443,3 +443,11 @@ input[type="date"]:not(.empty-date)::before {
   padding-left: 24px;
 } */
 
+/* GLOBAL PAGE LOAD LOCK */
+body.preload {
+  visibility: hidden;
+}
+
+body.preload * {
+  transition: none !important;
+}

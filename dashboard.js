@@ -1371,3 +1371,7 @@ window.renderConfigTable = renderConfigTable;
 window.openActivityModal = openActivityModal;
 window.renderActivityTableInTab = renderActivityTableInTab;
 window.generateProjectId = generateProjectId;
+
+window.addEventListener("load", () => {
+  document.body.classList.remove("preload");
+});
