@@ -18,8 +18,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInfo = document.querySelector(".user-info");
   if (userInfo && loggedUser) {
     userInfo.innerHTML = `
+      <button id="notifyBtn"
+        class="btn btn-sm btn-light position-relative me-2"
+        title="Send Notification">
+        <i class="bi bi-bell-fill"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          !
+        </span>
+      </button>
       <i class="bi bi-person-circle"></i> ${escapeHtml(loggedUser)}
       <button class="btn btn-sm btn-outline-danger ms-2" id="logoutBtn">Logout</button>`;
+
+    // 🔔 EVENT LISTENER HARUS DI SINI
+    document.getElementById("notifyBtn").addEventListener("click", async () => {
+      if (!confirm("Send dashboard notification email?")) return;
+
+      try {
+        const res = await fetch("http://localhost:3001/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: "aldouliakbr81@gmail.com",
+            subject: "WIK BT-TPM Dashboard Alert",
+            html: `
+              <h3>Dashboard Notification</h3>
+              <p>There are overdue items in Project State.</p>
+            `
+          })
+        });
+
+        if (!res.ok) throw new Error("Email failed");
+        alert("✅ Email sent");
+      } catch (e) {
+        console.error(e);
+        alert("❌ Failed to send email");
+      }
+    });
+
+    // logout
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("loggedUser");
       window.location.href = "index.html";
@@ -193,6 +229,20 @@ function loadtechnician() {
     });
 }
 
+function loadprojecttime() {
+  fetch("project-timeline.html?ver=" + Date.now())
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("main-content").innerHTML = html;
+      
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "project-timeline.js?ver=" + Date.now();
+      document.body.appendChild(script);
+    });
+}
+
 function loadrequestlist() {
   fetch("request-list.html?ver=" + Date.now())
     .then(r => r.text())
@@ -347,7 +397,7 @@ function loadProjectStateModule() {
 // PAGES snippets (unchanged)
 const pages = {
   "project-state": "<div id='projectStateContainer'></div>",
-  "npi": "<h4>NPI</h4><p>New Product Introduction tracking dashboard.</p>",
+  "project-timeline": "<div id='PTLoader'></div>",
   "project-list": `
     <h4>Project List</h4>
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
@@ -449,7 +499,6 @@ const pages = {
   "defect": "<div id='defectLoader'></div>",
   "traceability": "<div id='traceabilityLoader'></div>",
   "file-list": `<h4>Request List</h4><p>All project documents managed here.</p>`,
-  "project-state": `<div id="ganttLoader"><p class="text-muted">Loading project state...</p></div>`,
   "system-config": `
     <h4>System Configuration</h4>
     <p class="text-muted">Manage dropdown options for Project List and Activity Table.</p>
@@ -485,6 +534,7 @@ function openTab(pageKey, title){
     if (pageKey === "equipmentlist") loadequipmentlist(); 
     if (pageKey === "calibration") loadcalibration();
     if (pageKey === "technician-performance") loadtechnician();
+    if (pageKey === "project-timeline") loadprojecttime();
     if (pageKey === "traceability") traceabilitysn();});
   tab.querySelector(".close-tab").addEventListener("click", (e) => {
     e.stopPropagation();
@@ -524,6 +574,7 @@ function activateTabWithLoader(pageKey) {
   else if (pageKey === "equipmentlist") loadequipmentlist();
   else if (pageKey === "calibration") loadcalibration();
   else if (pageKey === "technician-performance") loadtechnician();
+  else if (pageKey === "project-timeline") loadprojecttime();
   else if (pageKey === "traceability") traceabilitysn();
 }
 
@@ -591,6 +642,9 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         }
         else if (key === "request-list") {
             loadrequestlist();
+        }
+        else if (key === "project-timeline") {
+            loadprojecttime();
         }
         else if (key === "technician-performance") {
             loadtechnician();

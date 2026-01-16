@@ -86,21 +86,24 @@ function render() {
   const filtered = cache.filter(r => {
     const w = Number(r.week);
     if (!r.week || isNaN(w) || w <= 0) return false;
-    const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+    const liveStatus = r._liveStatus;
+
 
 
     if (fw && String(r.week) !== fw) return false;
     if (fe && r.equipmentType !== fe) return false;
     if (fm && r.machine !== fm) return false;
     if (fr && r.responsible !== fr) return false;
-    if (fs && liveStatus !== fs) return false;
+    if (fs && r._liveStatus !== fs) return false;
+
 
     return true;
   });
 
   filtered.forEach((r, i) => {
     
-    const liveStatus = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
+    const liveStatus = r._liveStatus;
+
 
     let statusBadge = "";
 
@@ -112,6 +115,9 @@ function render() {
     }
     else if (liveStatus === "Reject") {
       statusBadge = `<span class="badge bg-dark">Reject</span>`;
+    }
+    else if (liveStatus === "Open") {
+      statusBadge = `<span class="badge bg-secondary">Open</span>`;
     }
     else {
       statusBadge = `<span class="badge bg-warning text-dark">Ongoing</span>`;
@@ -391,7 +397,8 @@ function populateFilters() {
     if (r.equipmentType) equipments.add(r.equipmentType);
     if (r.machine) machines.add(r.machine);
     if (r.responsible) responsibles.add(r.responsible);
-    if (r.status) statuses.add(r.status);
+    if (r._liveStatus) statuses.add(r._liveStatus);
+
   });
 
   fillSelect(filterWeek, weeks);
@@ -400,6 +407,8 @@ function populateFilters() {
   fillSelect(filterResponsible, responsibles);
 
   // status → sudah ada default option, hanya tambahkan jika perlu
+  fillSelect(filterStatus, statuses, true);
+
 }
 
 function fillSelect(select, values, keepDefault = false) {
@@ -443,6 +452,8 @@ function computeStatus(week, dateCompleted, weekCompleted) {
   const wc = Number(weekCompleted);
   const currentWeek = getCurrentISOWeek();
 
+  if (isNaN(w) || w <= 0) return "";
+
   const hasDateCompleted =
     typeof dateCompleted === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dateCompleted);
@@ -450,14 +461,14 @@ function computeStatus(week, dateCompleted, weekCompleted) {
   /* =========================
      1️⃣ DATE COMPLETED SUDAH ADA
   ========================= */
-  if (hasDateCompleted && !isNaN(w) && !isNaN(wc)) {
+  if (hasDateCompleted) {
 
-    // ✅ DONE hanya jika weekCompleted == week
-    if (wc === w) {
+    // ✅ DONE → complete di minggu yang benar
+    if (!isNaN(wc) && wc === w) {
       return "Done";
     }
 
-    // ❌ REJECT jika beda minggu
+    // ❌ REJECT → complete tapi beda minggu
     return "Reject";
   }
 
@@ -465,14 +476,20 @@ function computeStatus(week, dateCompleted, weekCompleted) {
      2️⃣ DATE COMPLETED BELUM ADA
   ========================= */
 
-  // ⏱ DELAY jika sudah lewat minggu
-  if (!isNaN(w) && currentWeek > w) {
+  // ⏱ DELAY → belum complete & sudah lewat minggu
+  if (currentWeek > w) {
     return "Delay";
   }
 
-  // ⏳ DEFAULT
-  return "Ongoing";
+  // 🔄 ONGOING → minggu ini & belum complete
+  if (currentWeek === w) {
+    return "Ongoing";
+  }
+
+  // 📂 OPEN → minggu depan / future PM
+  return "Open";
 }
+
 
 
 
@@ -486,28 +503,33 @@ onValue(ref(db, "preventive-maintenance"), snap => {
   let pmOngoing = 0;
   let pmOverdue = 0;
   let pmReject = 0;
+  let pmOpen = 0;
+
+  cache = [];
 
   if (snap.exists()) {
     Object.entries(snap.val()).forEach(([k, v]) => {
 
-    const w = Number(v.week);
-    if (!v.week || isNaN(w) || w <= 0) return; // ⛔ SKIP PM TANPA WEEK
+      const status = computeStatus(
+        v.week,
+        v.dateCompleted,
+        v.weekCompleted
+      );
 
-    const liveStatus = computeStatus(
-      v.week,
-      v.dateCompleted,
-      v.weekCompleted
-    );
+      if (!status) return;
 
-    cache.push({ key: k, ...v, _liveStatus: liveStatus });
+      cache.push({ key: k, ...v, _liveStatus: status });
 
-    if (liveStatus === "Done") pmDone++;
-    else if (liveStatus === "Delay") pmOverdue++;
-    else if (liveStatus === "Reject") pmReject++;
-    else pmOngoing++;
-  });
-
+      switch (status) {
+        case "Done":    pmDone++;    break;
+        case "Ongoing": pmOngoing++; break;
+        case "Delay":   pmOverdue++; break;
+        case "Reject":  pmReject++;  break;
+        case "Open":    pmOpen++;    break;
+      }
+    });
   }
+
 
   // ======================
   // UPDATE DASHBOARD CARD
@@ -590,7 +612,9 @@ bindTooltip("cardPmReject", "Reject");
 
 function renderPerformanceCharts() {
 
-   /* ================= TECHNICIAN ================= */
+  const currentWeek = getCurrentISOWeek();
+
+  /* ================= TECHNICIAN ================= */
   const techDiv = document.getElementById("techPerformanceChart");
   techDiv.innerHTML = "";
 
@@ -600,9 +624,11 @@ function renderPerformanceCharts() {
     if (!r.responsible) return;
 
     const w = Number(r.week);
-    if (!r.week || isNaN(w) || w <= 0) return;
+    if (isNaN(w) || w <= 0) return;
 
-    // 🔥 WAJIB ADA INI
+    // 🔥 HANYA TASK YANG SUDAH JATUH TEMPO
+    if (w > currentWeek) return;
+
     if (!techMap[r.responsible]) {
       techMap[r.responsible] = {
         total: 0,
@@ -615,24 +641,24 @@ function renderPerformanceCharts() {
 
     techMap[r.responsible].total++;
 
-    const status = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
-    if (status === "Done") techMap[r.responsible].done++;
-    else if (status === "Reject") techMap[r.responsible].reject++;
-    else if (status === "Delay") techMap[r.responsible].delay++;
-    else techMap[r.responsible].ongoing++;
+    switch (r._liveStatus) {
+      case "Done":    techMap[r.responsible].done++;    break;
+      case "Ongoing": techMap[r.responsible].ongoing++; break;
+      case "Delay":   techMap[r.responsible].delay++;   break;
+      case "Reject":  techMap[r.responsible].reject++;  break;
+    }
   });
 
-
   Object.entries(techMap).forEach(([name, v]) => {
+
     const pct = v.total
       ? Math.round((v.done / v.total) * 100)
       : 0;
 
-    const donePct    = v.total ? (v.done / v.total) * 100 : 0;
-    const ongoingPct = v.total ? (v.ongoing / v.total) * 100 : 0;
-    const delayPct   = v.total ? (v.delay / v.total) * 100 : 0;
-    const rejectPct  = v.total ? (v.reject / v.total) * 100 : 0;
-
+    const donePct    = (v.done / v.total) * 100;
+    const ongoingPct = (v.ongoing / v.total) * 100;
+    const delayPct   = (v.delay / v.total) * 100;
+    const rejectPct  = (v.reject / v.total) * 100;
 
     techDiv.innerHTML += `
       <div class="tech-row">
@@ -645,37 +671,53 @@ function renderPerformanceCharts() {
           <div class="tech-bar reject"  style="width:${rejectPct}%"></div>
         </div>
 
-
         <div class="tech-percent">${pct}%</div>
       </div>
     `;
   });
 
-
-
-  /* ========= MONTH ========= */
+    /* ================= MONTH ================= */
   const monthDiv = document.getElementById("executionMonthChart");
   monthDiv.innerHTML = `<div class="month-chart"></div>`;
   const chart = monthDiv.querySelector(".month-chart");
 
-  const monthMap = {};
-  cache.forEach(r => {
-    if (!r.month) return;
-    if (!monthMap[r.month]) {
-      monthMap[r.month] = { total: 0, done: 0 };
-    }
-    monthMap[r.month].total++;
-    monthMap[r.month].done += Number(r.pointSummary || 0);
-  });
 
   const monthOrder = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
   ];
 
+  // 🔥 INIT SEMUA BULAN = 0
+  const monthMap = {};
   monthOrder.forEach(m => {
-    if (!monthMap[m]) return;
-    const pct = Math.round((monthMap[m].done / monthMap[m].total) * 100);
+    monthMap[m] = { total: 0, done: 0 };
+  });
+
+  // 🔥 HITUNG DATA YANG SUDAH JATUH TEMPO
+  cache.forEach(r => {
+    if (!r.month) return;
+
+    const w = Number(r.week);
+    if (isNaN(w) || w <= 0) return;
+
+    // hanya sampai minggu sekarang
+    if (w > currentWeek) return;
+
+    if (!monthMap[r.month]) return;
+
+    monthMap[r.month].total++;
+
+    if (r._liveStatus === "Done") {
+      monthMap[r.month].done++;
+    }
+  });
+
+  // 🔥 RENDER 12 BULAN TANPA SYARAT
+  monthOrder.forEach(m => {
+    const v = monthMap[m];
+    const pct = v.total
+      ? Math.round((v.done / v.total) * 100)
+      : 0;
 
     chart.innerHTML += `
       <div class="month-bar">
@@ -687,5 +729,7 @@ function renderPerformanceCharts() {
       </div>
     `;
   });
+
 }
+
 

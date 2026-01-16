@@ -184,6 +184,18 @@ function selectInPart(p) {
   $("inSubCategory").value = p.subCategory;
   $("inMachine").value = p.machine;
   $("inSpec").value = p.specification;
+
+  const stored = storageCache.find(s => s.partCode === p.partCode);
+
+  if (stored) {
+    $("inMinStock").value = stored.minStock ?? 0;
+    $("inMinStock").readOnly = true;   // 🔒 LOCK
+    $("inMinStock").title = "Loaded from storage";
+  } else {
+    $("inMinStock").value = "";
+    $("inMinStock").readOnly = false;  // ✍️ WAJIB INPUT
+    $("inMinStock").title = "Set minimum stock for new part";
+  }
 }
 
 /* ===============================
@@ -209,14 +221,20 @@ $("submitIn")?.addEventListener("click", async () => {
   let newStock = qty;
   if (snap.exists()) newStock += Number(snap.val().stock || 0);
 
-  await set(refStore, {
-    partCode,
-    partName,
-    rack,
-    row,
-    minStock,
-    stock: newStock
-  });
+  const payload = {
+  partCode,
+  partName,
+  rack,
+  row,
+  stock: newStock
+  };
+
+  // 🔥 HANYA SET minStock JIKA PART BARU
+  if (!snap.exists()) {
+    payload.minStock = minStock;
+  }
+
+  await update(refStore, payload);
 
   await push(ref(db, "transactions"), {
     type: "IN",

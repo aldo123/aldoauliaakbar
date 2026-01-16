@@ -74,14 +74,35 @@ function addOneYear(dateStr) {
 function calculateRemark(nextCalibration) {
   if (!nextCalibration) return "OK";
 
+  let next;
+
+  // ===== PARSE DATE AMAN =====
+  if (/^\d{4}-\d{2}-\d{2}$/.test(nextCalibration)) {
+    // YYYY-MM-DD
+    next = new Date(nextCalibration);
+  } 
+  else if (/^\d{2}\/\d{2}\/\d{4}$/.test(nextCalibration)) {
+    // DD/MM/YYYY
+    const [d, m, y] = nextCalibration.split("/");
+    next = new Date(`${y}-${m}-${d}`);
+  } 
+  else {
+    return "OK"; // format aneh → anggap OK
+  }
+
+  if (isNaN(next.getTime())) return "OK";
+
   const today = new Date();
-  const next = new Date(nextCalibration);
-  const diffDays = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+  today.setHours(0, 0, 0, 0);
+  next.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((next - today) / 86400000);
 
   if (diffDays < 0) return "OVERDUE";
   if (diffDays <= 30) return "DUE";
   return "OK";
 }
+
 
 /* ===============================
    RENDER TABLE
@@ -184,8 +205,8 @@ tbody.addEventListener("click", async e => {
       ["APPROVE", "BLOCKED", "SCRAPPED"].includes(status)
         ? status
         : "";
-    eqLastInspection.value = eq.lastInspection;
-    eqNextCalibration.value = eq.nextCalibration;
+    eqLastInspection.value = toISODate(eq.lastInspection);
+    eqNextCalibration.value = toISODate(eq.nextCalibration);
     eqModel.value = eq.model;
     eqBrand.value = eq.brand;
     eqSN.value = eq.serialNo;
@@ -404,4 +425,19 @@ document.getElementById("btnCancel").onclick = () => {
   editingKey = null;
   modal.hide();
 };
+
+function toISODate(v) {
+  if (!v) return "";
+
+  // YYYY-MM-DD (sudah benar)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+
+  // DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    const [d, m, y] = v.split("/");
+    return `${y}-${m}-${d}`;
+  }
+
+  return "";
+}
 

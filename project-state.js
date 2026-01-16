@@ -411,16 +411,40 @@ function drawDonutChart(o) {
 function getStatus(nextDate) {
   if (!nextDate || nextDate === "--") return "OK";
 
-  const due = new Date(nextDate);
+  let due;
+
+  // =========================
+  // SAFE DATE PARSING
+  // =========================
+  if (/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+    // YYYY-MM-DD
+    due = new Date(nextDate);
+  }
+  else if (/^\d{2}\/\d{2}\/\d{4}$/.test(nextDate)) {
+    // DD/MM/YYYY
+    const [d, m, y] = nextDate.split("/");
+    due = new Date(`${y}-${m}-${d}`);
+  }
+  else {
+    return "OK"; // format tidak dikenal
+  }
+
   if (isNaN(due.getTime())) return "OK";
 
+  // =========================
+  // NORMALIZE DAY (ANTI JAM BUG)
+  // =========================
   const today = new Date();
-  const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
 
-  if (diff < 0) return "OVERDUE";
-  if (diff <= 30) return "DUE";
+  const diffDays = Math.floor((due - today) / 86400000);
+
+  if (diffDays < 0) return "OVERDUE";
+  if (diffDays <= 30) return "DUE";
   return "OK";
 }
+
 
 function renderCalibrationTable(data) {
   const tbody = document.getElementById("calibrationBody");
@@ -627,17 +651,24 @@ function computeStatus(week, dateCompleted, weekCompleted) {
   const wc = Number(weekCompleted);
   const currentWeek = getCurrentISOWeek();
 
+  if (isNaN(w) || w <= 0) return "";
+
   const hasDate =
     typeof dateCompleted === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dateCompleted);
 
-  if (hasDate && !isNaN(w) && !isNaN(wc)) {
-    return wc === w ? "Done" : "Reject";
+  // COMPLETED
+  if (hasDate) {
+    return (!isNaN(wc) && wc === w) ? "Done" : "Reject";
   }
 
-  if (!isNaN(w) && currentWeek > w) return "Delay";
-  return "Ongoing";
+  // NOT COMPLETED
+  if (currentWeek > w) return "Delay";
+  if (currentWeek === w) return "Ongoing";
+
+  return "Open"; // 🔥 future PM
 }
+
 
 onValue(ref(db, "preventive-maintenance"), snap => {
   const container = document.getElementById("techPerformanceChart");
@@ -654,25 +685,38 @@ onValue(ref(db, "preventive-maintenance"), snap => {
   if (!snap.exists()) return;
 
   const map = {};
-
+  const currentWeek = getCurrentISOWeek();
   Object.values(snap.val()).forEach(r => {
-    if (!r.responsible) return;
+    if (!r.responsible || !r.week) return;
 
-    // ======================
-    // HITUNG STATUS
-    // ======================
+    const w = Number(r.week);
+    if (isNaN(w) || w <= 0) return;
+
     const st = computeStatus(r.week, r.dateCompleted, r.weekCompleted);
 
+    // ======================
+    // PM SUMMARY CARD
+    // ======================
     if (st === "Done") pmDone++;
     else if (st === "Reject") pmReject++;
     else if (st === "Delay") pmDelay++;
-    else pmOngoing++;
+    else if (st === "Ongoing") pmOngoing++;
+    // ⚠ Open → DIABAIKAN
 
     // ======================
-    // TECHNICIAN PERFORMANCE
+    // TECH PERFORMANCE
     // ======================
+    // 🔥 HANYA week ≤ currentWeek
+    if (w > currentWeek) return;
+
     if (!map[r.responsible]) {
-      map[r.responsible] = { total:0, done:0, ongoing:0, delay:0, reject:0 };
+      map[r.responsible] = {
+        total: 0,
+        done: 0,
+        ongoing: 0,
+        delay: 0,
+        reject: 0
+      };
     }
 
     map[r.responsible].total++;
@@ -680,8 +724,9 @@ onValue(ref(db, "preventive-maintenance"), snap => {
     if (st === "Done") map[r.responsible].done++;
     else if (st === "Reject") map[r.responsible].reject++;
     else if (st === "Delay") map[r.responsible].delay++;
-    else map[r.responsible].ongoing++;
+    else if (st === "Ongoing") map[r.responsible].ongoing++;
   });
+
 
   // ======================
   // UPDATE PM SUMMARY CARDS

@@ -1,0 +1,66 @@
+body {
+  margin: 0;
+  background: #0b3b2e;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* WRAPPER */
+.timeline-wrapper {
+  padding: 16px;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* HEADER */
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: #eafff5;
+  margin-bottom: 10px;
+}
+
+.timeline-header small {
+  opacity: 0.75;
+}
+
+/* GANTT CONTAINER */
+.gantt-container {
+  background: #0f5132;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06),
+              0 14px 30px rgba(0,0,0,0.45);
+  overflow-x: auto;
+}
+
+/* PROJECT BAR */
+.project-bar .bar {
+  fill: #1dd1a1 !important;
+}
+
+/* PHASE BAR */
+.bar {
+  fill: #3ee4a3 !important;
+}
+
+.bar-progress {
+  fill: #00ffcc !important;
+}
+
+/* GRID */
+.grid-background {
+  fill: #0a2e23;
+}
+
+/* TEXT */
+.gantt .bar-label {
+  fill: #ffffff;
+  font-size: 12px;
+}
+
+/* TODAY LINE */
+.today-highlight {
+  stroke: #ffdd57;
+  stroke-width: 2;
+}

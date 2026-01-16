@@ -17,16 +17,35 @@ let selectedKey = null;
 function getStatus(nextDate) {
   if (!nextDate) return "OK";
 
-  const due = new Date(nextDate);
-  if (isNaN(due.getTime())) return "OK"; // 🔥 FIX INVALID DATE
+  let due;
+
+  // ===== PARSE DATE AMAN =====
+  if (/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+    // YYYY-MM-DD
+    due = new Date(nextDate);
+  }
+  else if (/^\d{2}\/\d{2}\/\d{4}$/.test(nextDate)) {
+    // DD/MM/YYYY
+    const [d, m, y] = nextDate.split("/");
+    due = new Date(`${y}-${m}-${d}`);
+  }
+  else {
+    return "OK"; // format aneh → anggap OK
+  }
+
+  if (isNaN(due.getTime())) return "OK";
 
   const today = new Date();
-  const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
 
-  if (diff < 0) return "OVERDUE";
-  if (diff <= 30) return "DUE";
+  const diffDays = Math.floor((due - today) / 86400000);
+
+  if (diffDays < 0) return "OVERDUE";
+  if (diffDays <= 30) return "DUE";
   return "OK";
 }
+
 
 
 /* ===============================
