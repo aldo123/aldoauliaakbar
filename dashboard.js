@@ -18,43 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInfo = document.querySelector(".user-info");
   if (userInfo && loggedUser) {
     userInfo.innerHTML = `
-      <button id="notifyBtn"
-        class="btn btn-sm btn-light position-relative me-2"
-        title="Send Notification">
-        <i class="bi bi-bell-fill"></i>
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          !
-        </span>
-      </button>
       <i class="bi bi-person-circle"></i> ${escapeHtml(loggedUser)}
       <button class="btn btn-sm btn-outline-danger ms-2" id="logoutBtn">Logout</button>`;
-
-    // 🔔 EVENT LISTENER HARUS DI SINI
-    document.getElementById("notifyBtn").addEventListener("click", async () => {
-      if (!confirm("Send dashboard notification email?")) return;
-
-      try {
-        const res = await fetch("http://localhost:3001/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: "aldouliakbr81@gmail.com",
-            subject: "WIK BT-TPM Dashboard Alert",
-            html: `
-              <h3>Dashboard Notification</h3>
-              <p>There are overdue items in Project State.</p>
-            `
-          })
-        });
-
-        if (!res.ok) throw new Error("Email failed");
-        alert("✅ Email sent");
-      } catch (e) {
-        console.error(e);
-        alert("❌ Failed to send email");
-      }
-    });
-
     // logout
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("loggedUser");
