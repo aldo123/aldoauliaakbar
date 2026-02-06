@@ -378,6 +378,7 @@ const pages = {
       <button id="importProjectList" class="btn btn-outline-warning btn-sm"><i class="bi bi-upload"></i> Import Excel</button>
       <input type="file" id="projectImportFile" style="display:none;" accept=".xlsx,.xls" />
     </div>
+
     <div class="table-responsive">
       <table class="table table-bordered table-striped" id="projectTable">
         <thead class="table-primary text-center align-middle">
@@ -434,6 +435,35 @@ const pages = {
         <input type="file" id="importActFile" accept=".xlsx,.xls" style="display:none;">
       </div>
     </div>
+    <div class="mb-2 d-flex gap-3 flex-wrap align-items-center">
+
+      <div class="filter-inline">
+        <label>Site</label>
+        <select id="actFilterSite" class="form-select form-select-sm w-auto">
+          <option value="">All Site</option>
+        </select>
+      </div>
+
+      <div class="filter-inline">
+        <label>Owner</label>
+        <select id="actFilterOwner" class="form-select form-select-sm w-auto">
+          <option value="">All Owner</option>
+        </select>
+      </div>
+
+      <div class="filter-inline">
+        <label>Status</label>
+        <select id="actFilterStatus" class="form-select form-select-sm w-auto">
+          <option value="">All Status</option>
+          <option value="ONGOING">ONGOING</option>
+          <option value="DONE">DONE</option>
+        </select>
+      </div>
+
+    </div>
+
+
+
     <div class="table-responsive">
       <table class="table table-bordered table-hover table-striped align-middle" id="activityTableTab">
         <thead class="table-dark">
@@ -1030,10 +1060,44 @@ function renderSelectHtml(name, options=[], selected=""){
 async function renderActivityTableInTab(pid){
   const container = document.getElementById("main-content"); if(!container) return;
   if(!container.querySelector("#activityTableTab")) container.innerHTML = pages["activity-tab-placeholder"];
+  // DEFAULT STATUS = ONGOING (hanya saat pertama load)
+  const statusEl = document.getElementById("actFilterStatus");
+  if (statusEl && !statusEl.dataset.init) {
+    statusEl.value = "ONGOING";
+    statusEl.dataset.init = "1"; // penanda sudah pernah set
+  }
+
   const tb = document.getElementById("activityTableTab"); if(!tb) return;
   const tbodyFinal = tb.querySelector("tbody"); tbodyFinal.innerHTML = "";
-  const data = await loadActivitiesFromFirebase(pid);
-  populateActivityTab(Array.isArray(data)?data:[]);
+  // const data = await loadActivitiesFromFirebase(pid);
+  // populateActivityTab(Array.isArray(data)?data:[]);
+
+  const rawData = await loadActivitiesFromFirebase(pid);
+  const dataArr = Array.isArray(rawData) ? rawData : [];
+
+  // isi dropdown site & owner
+  initActivityFilters(dataArr);
+
+  // ambil nilai filter
+  const fSite   = document.getElementById("actFilterSite")?.value || "";
+  const fOwner  = document.getElementById("actFilterOwner")?.value || "";
+  const fStatus = document.getElementById("actFilterStatus")?.value || "";
+
+  // filter data
+  const filteredData = dataArr.filter(a => {
+    if (fSite && a.site !== fSite) return false;
+    if (fOwner && a.owner !== fOwner) return false;
+
+    if (fStatus){
+      const st = getActivityStatus(a);
+      if (st !== fStatus) return false;
+    }
+
+    return true;
+  });
+
+  populateActivityTab(filteredData);
+
   function populateActivityTab(data){
     const ownerOpts = Array.from(new Set([...(configData.ee||[]), ...(configData.tpm||[])]));
     const siteOpts = configData.site || [];
@@ -1053,6 +1117,15 @@ async function renderActivityTableInTab(pid){
 
   setTimeout(()=>{ const addGlobal = document.getElementById("addActivityGlobal"); if(!addGlobal) return; addGlobal.onclick = async ()=>{ const actId = generateActivityId(); await saveSingleActivity(pid, actId, { activity:"New Task", site:configData.site[0]||"", owner:configData.ee[0]||configData.tpm[0]||"", supplier:configData.supplier[0]||"", level:"" }); renderActivityTableInTab(pid); }; setTimeout(()=>{ showPlaceholderForEmptyDates("#activityTableTab tbody"); setTimeout(()=>{ markDelaysInActivityTable(document); },500); },300); },400);
   setTimeout(()=>{ const exportBtn = document.getElementById("exportActBtn"); if (exportBtn) {exportBtn.onclick = () => exportActivityToExcel(pid);}const importBtn = document.getElementById("importActBtn");const importFile = document.getElementById("importActFile");if (importBtn && importFile) {importBtn.onclick = () => importFile.click();importFile.onchange = (e) => {importActivityFromExcel(pid, e.target.files[0]);};}}, 500);
+
+
+  setTimeout(() => {
+  ["actFilterSite","actFilterOwner","actFilterStatus"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.onchange = () => renderActivityTableInTab(pid);
+    });
+  }, 200);
 
 }
 
@@ -1381,6 +1454,38 @@ function generateProjectId(){
   const ss = pad(d.getSeconds());
   return `${dd}${mm}${yyyy}${hh}${mi}${ss}`;
 }
+
+function initActivityFilters(data){
+  const siteEl = document.getElementById("actFilterSite");
+  const ownerEl = document.getElementById("actFilterOwner");
+
+  if (!siteEl || !ownerEl) return;
+
+  // SIMPAN VALUE SEKARANG
+  const prevSite = siteEl.value;
+  const prevOwner = ownerEl.value;
+
+  const sites = [...new Set(data.map(a => a.site).filter(Boolean))];
+  const owners = [...new Set(data.map(a => a.owner).filter(Boolean))];
+
+  siteEl.innerHTML = `<option value="">All Site</option>` +
+    sites.map(s => `<option>${s}</option>`).join("");
+
+  ownerEl.innerHTML = `<option value="">All Owner</option>` +
+    owners.map(o => `<option>${o}</option>`).join("");
+
+  // BALIKAN VALUE LAMA JIKA MASIH ADA
+  if (sites.includes(prevSite)) siteEl.value = prevSite;
+  if (owners.includes(prevOwner)) ownerEl.value = prevOwner;
+}
+
+
+function getActivityStatus(a){
+  const sop = (a["actual_sop"] || "").trim();
+  if (!sop || sop === "--" || sop === "—") return "ONGOING";
+  return "DONE";
+}
+
 
 // Export utilities to window
 window.computePhaseDelay = computePhaseDelay;

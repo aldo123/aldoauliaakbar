@@ -451,3 +451,16 @@ body.preload {
 body.preload * {
   transition: none !important;
 }
+
+.filter-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-inline label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #145a32;
+  white-space: nowrap;
+}
