@@ -55,7 +55,7 @@ onValue(ref(db, "equipment"), snap => {
         model: e.model || "",
         brand: e.brand || "",
         serialNo: e.serialNo || "",
-        remark: calculateRemark(e.nextCalibration)
+        //remark: calculateRemark(e.nextCalibration)
       });
     });
   }
@@ -111,6 +111,7 @@ function renderTable(data) {
   tbody.innerHTML = "";
 
   data.forEach((e, index) => {
+    const remark = calculateRemark(e.nextCalibration);
 
     if (filterNo.value && !e.equipmentNo.toLowerCase().includes(filterNo.value.toLowerCase())) return;
     if (filterGroup.value && e.group !== filterGroup.value) return;
@@ -119,9 +120,9 @@ function renderTable(data) {
       e.actionStatus.toLowerCase() !== filterStatus.value.toLowerCase()
     ) return;
     if (filterBrand.value && e.brand !== filterBrand.value) return;
-    if (filterRemark.value && e.remark !== filterRemark.value) return;
+    if (filterRemark.value && remark !== filterRemark.value) return;
     const statusClass = `status-${e.actionStatus.toLowerCase()}`;
-    const remarkClass = `remark-${e.remark.toLowerCase()}`;
+    const remarkClass = `remark-${remark.toLowerCase()}`;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -134,7 +135,7 @@ function renderTable(data) {
       <td>${e.model}</td>
       <td>${e.brand}</td>
       <td>${e.serialNo}</td>
-      <td><span class="remark-badge remark-${e.remark.toLowerCase()}">${e.remark}</span></td>
+      <td><span class="remark-badge remark-${remark.toLowerCase()}">${remark}</span></td>
       <td>
         <button class="icon-btn edit-btn" data-key="${e.key}">✏️</button>
         <button class="icon-btn delete-btn" data-key="${e.key}">🗑️</button>
@@ -210,7 +211,7 @@ tbody.addEventListener("click", async e => {
     eqModel.value = eq.model;
     eqBrand.value = eq.brand;
     eqSN.value = eq.serialNo;
-    eqRemark.value = eq.remark;
+    eqRemark.value = calculateRemark(eq.nextCalibration);
     modal.show();
   }
 });
@@ -332,7 +333,7 @@ importFile.onchange = async e => {
       model: get(r, "model") || "",
       brand: get(r, "brand") || "",
       serialNo: String(get(r, "s/n")).trim() || "",
-      remark: get(r, "remark") || ""
+      //remark: get(r, "remark") || ""
     });
   }
 
@@ -397,6 +398,7 @@ btnExportEquipment.onclick = () => {
     "Remark\n";
 
   equipmentData.forEach(e => {
+    const remark = calculateRemark(e.nextCalibration);
     csv += [
       e.equipmentNo,
       e.group,
@@ -406,7 +408,7 @@ btnExportEquipment.onclick = () => {
       e.model,
       e.brand,
       e.serialNo,
-      e.remark
+      remark
     ].map(v => `"${v ?? ""}"`).join(",") + "\n";
   });
 
@@ -441,3 +443,6 @@ function toISODate(v) {
   return "";
 }
 
+setInterval(() => {
+  renderTable(equipmentData);
+}, 60000); // 1 menit
