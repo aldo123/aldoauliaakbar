@@ -592,7 +592,9 @@ function showPmTooltip(e, statusType) {
 
 function hideTooltip() {
   tooltip.style.opacity = 0;
+  tooltip.style.display = "none";
 }
+
 
 const bindTooltip = (id, status) => {
   const el = document.getElementById(id);
@@ -778,7 +780,9 @@ function showTechTooltip(e, name, status) {
     <div>${status} PM : <strong>${total}</strong></div>
   `;
 
+  tooltip.style.display = "block";   // WAJIB
   tooltip.style.left = e.clientX + 15 + "px";
   tooltip.style.top  = e.clientY + 15 + "px";
   tooltip.style.opacity = 1;
 }
+

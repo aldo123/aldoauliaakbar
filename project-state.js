@@ -749,19 +749,87 @@ onValue(ref(db, "preventive-maintenance"), snap => {
     const pct = Math.round(v.done / total * 100);
 
     container.innerHTML += `
-      <div class="tech-row">
-        <div class="tech-name">${name}</div>
-        <div class="tech-bar-bg">
-          <div class="tech-bar done" style="width:${v.done/total*100}%"></div>
-          <div class="tech-bar ongoing" style="width:${v.ongoing/total*100}%"></div>
-          <div class="tech-bar delay" style="width:${v.delay/total*100}%"></div>
-          <div class="tech-bar reject" style="width:${v.reject/total*100}%"></div>
-        </div>
-        <div class="tech-percent">${pct}%</div>
+    <div class="tech-row">
+      <div class="tech-name">${name}</div>
+      <div class="tech-bar-bg">
+
+        <div class="tech-bar done"
+          data-name="${name}"
+          data-status="Done"
+          style="width:${v.done/total*100}%"></div>
+
+        <div class="tech-bar ongoing"
+          data-name="${name}"
+          data-status="Ongoing"
+          style="width:${v.ongoing/total*100}%"></div>
+
+        <div class="tech-bar delay"
+          data-name="${name}"
+          data-status="Delay"
+          style="width:${v.delay/total*100}%"></div>
+
+        <div class="tech-bar reject"
+          data-name="${name}"
+          data-status="Reject"
+          style="width:${v.reject/total*100}%"></div>
+
       </div>
+      <div class="tech-percent">${pct}%</div>
+    </div>
     `;
+
   });
+
+  setTimeout(() => {
+    document.querySelectorAll("#techPerformanceChart .tech-bar")
+      .forEach(bar => {
+
+        bar.addEventListener("mousemove", e => {
+          showTechTooltip(
+            e,
+            bar.dataset.name,
+            bar.dataset.status
+          );
+        });
+
+        bar.addEventListener("mouseleave", () => {
+          tooltip.style.display = "none";
+        });
+
+      });
+  }, 0);
+
 });
+
+async function showTechTooltip(e, name, status) {
+
+  const snap = await get(ref(db, "preventive-maintenance"));
+  if (!snap.exists()) return;
+
+  let total = 0;
+
+  Object.values(snap.val()).forEach(r => {
+    if (r.responsible !== name) return;
+
+    const st = computeStatus(
+      r.week,
+      r.dateCompleted,
+      r.weekCompleted
+    );
+
+    if (st === status) total++;
+  });
+
+  tooltip.innerHTML = `
+    <div class="title">${name}</div>
+    <div class="item">${status} PM : ${total} task</div>
+  `;
+
+  tooltip.style.display = "block";
+  tooltip.style.left = e.pageX + 15 + "px";
+  tooltip.style.top = e.pageY + 15 + "px";
+}
+
 
 async function getPrPoOverdueList() {
   const snap = await get(ref(db, "request-list"));
