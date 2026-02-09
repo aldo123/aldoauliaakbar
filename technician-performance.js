@@ -407,23 +407,21 @@ function populateFilters() {
   fillSelect(filterResponsible, responsibles);
 
   // status → sudah ada default option, hanya tambahkan jika perlu
-  fillSelect(filterStatus, statuses, true);
+  fillSelect(filterStatus, statuses);
 
 }
 
 function fillSelect(select, values, keepDefault = false) {
   const current = select.value;
-  const defaultHTML = keepDefault
-    ? select.innerHTML
-    : `<option value="">All</option>`;
 
-  select.innerHTML = defaultHTML;
+  // RESET TOTAL
+  select.innerHTML = `<option value="">All</option>`;
 
   const sorted = [...values].sort((a, b) => {
     if (typeof a === "number" && typeof b === "number") {
-      return a - b; // numeric sort
+      return a - b;
     }
-    return String(a).localeCompare(String(b)); // fallback text
+    return String(a).localeCompare(String(b));
   });
 
   sorted.forEach(v => {
@@ -432,6 +430,7 @@ function fillSelect(select, values, keepDefault = false) {
 
   select.value = current;
 }
+
 
 function getCurrentISOWeek() {
   const today = new Date();
