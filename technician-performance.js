@@ -323,7 +323,7 @@ document.getElementById("importFile").onchange = async (e) => {
   rows.forEach((r, i) => {
     const dateCompleted = excelDateToISO(r["Date completed"]);
     const weekCompleted = dateCompleted ? getISOWeek(dateCompleted) : "";
-
+    //console.log("ROW HEADER:", Object.keys(r));
     bulk[`pm_${i}`] = {
       equipmentType: String(r["Equipment Type"] || ""),
       machine: String(r["Machine"] || ""),
@@ -661,19 +661,37 @@ function renderPerformanceCharts() {
     const rejectPct  = (v.reject / v.total) * 100;
 
     techDiv.innerHTML += `
-      <div class="tech-row">
-        <div class="tech-name">${name}</div>
+    <div class="tech-row">
+      <div class="tech-name">${name}</div>
 
-        <div class="tech-bar-bg">
-          <div class="tech-bar done"    style="width:${donePct}%"></div>
-          <div class="tech-bar ongoing" style="width:${ongoingPct}%"></div>
-          <div class="tech-bar delay"   style="width:${delayPct}%"></div>
-          <div class="tech-bar reject"  style="width:${rejectPct}%"></div>
-        </div>
+      <div class="tech-bar-bg">
 
-        <div class="tech-percent">${pct}%</div>
+        <div class="tech-bar done"
+          data-name="${name}"
+          data-status="Done"
+          style="width:${donePct}%"></div>
+
+        <div class="tech-bar ongoing"
+          data-name="${name}"
+          data-status="Ongoing"
+          style="width:${ongoingPct}%"></div>
+
+        <div class="tech-bar delay"
+          data-name="${name}"
+          data-status="Delay"
+          style="width:${delayPct}%"></div>
+
+        <div class="tech-bar reject"
+          data-name="${name}"
+          data-status="Reject"
+          style="width:${rejectPct}%"></div>
+
       </div>
+
+      <div class="tech-percent">${pct}%</div>
+    </div>
     `;
+
   });
 
     /* ================= MONTH ================= */
@@ -729,7 +747,38 @@ function renderPerformanceCharts() {
       </div>
     `;
   });
+  setTimeout(() => {
+    document.querySelectorAll(".tech-bar").forEach(bar => {
+
+      bar.addEventListener("mousemove", e => {
+        const name = bar.dataset.name;
+        const status = bar.dataset.status;
+        showTechTooltip(e, name, status);
+      });
+
+      bar.addEventListener("mouseleave", hideTooltip);
+    });
+  }, 0);
 
 }
 
 
+function showTechTooltip(e, name, status) {
+
+  let total = 0;
+
+  cache.forEach(r => {
+    if (r.responsible !== name) return;
+    if (r._liveStatus !== status) return;
+    total++;
+  });
+
+  tooltip.innerHTML = `
+    <h6>${name}</h6>
+    <div>${status} PM : <strong>${total}</strong></div>
+  `;
+
+  tooltip.style.left = e.clientX + 15 + "px";
+  tooltip.style.top  = e.clientY + 15 + "px";
+  tooltip.style.opacity = 1;
+}
