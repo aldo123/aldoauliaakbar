@@ -650,7 +650,10 @@ function renderPerformanceCharts() {
     }
   });
 
-  Object.entries(techMap).forEach(([name, v]) => {
+  //Object.entries(techMap).forEach(([name, v]) => {
+  Object.entries(techMap)
+  .sort((a, b) => b[1].done - a[1].done)   // 🔥 SORT DONE TERBANYAK
+  .forEach(([name, v]) => {
 
     const pct = v.total
       ? Math.round((v.done / v.total) * 100)

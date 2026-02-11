@@ -744,7 +744,11 @@ onValue(ref(db, "preventive-maintenance"), snap => {
   // ======================
   // RENDER TECH PERFORMANCE
   // ======================
-  Object.entries(map).forEach(([name,v]) => {
+  //Object.entries(map).forEach(([name,v]) => {
+  Object.entries(map)
+  .sort((a, b) => b[1].done - a[1].done) // 🔥 SORT DONE TERBANYAK
+  .forEach(([name,v]) => {
+
     const total = v.total || 1;
     const pct = Math.round(v.done / total * 100);
 
