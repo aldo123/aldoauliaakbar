@@ -1106,14 +1106,60 @@ async function renderActivityTableInTab(pid){
     data.forEach((a,i)=>{
       a.activity = a.activity||""; a.site = a.site||siteOpts[0]||""; a.owner = a.owner||ownerOpts[0]||""; a.level = a.level||""; a.supplier = a.supplier||supplierOpts[0]||"";
       activityDateFields.forEach(k=>{ if(a[`plan_${k}`]===undefined) a[`plan_${k}`]=a[k]||""; if(a[`actual_${k}`]===undefined) a[`actual_${k}`]=""; });
-      const tr = document.createElement("tr"); tr.dataset.pid = pid; tr.dataset.i = i;
+      const tr = document.createElement("tr"); tr.dataset.pid = pid; tr.dataset.actid = a.id;
       tr.innerHTML = `<td class="text-center">${i+1}</td><td><input class="form-control form-control-sm" data-field="activity" value="${escapeHtml(a.activity)}" disabled></td><td>${renderSelectHtml("site", siteOpts, a.site)}</td><td>${renderSelectHtml("owner", ownerOpts, a.owner)}</td>${activityDateFields.map(k=>`<td><input type="date" class="form-control form-control-sm mb-1" data-field="plan_${k}" value="${a[`plan_${k}`]||""}" disabled><input type="date" class="form-control form-control-sm" data-field="actual_${k}" value="${a[`actual_${k}`]||""}" disabled></td>`).join("")}<td><input class="form-control form-control-sm" data-field="level" value="${escapeHtml(a.level)}" disabled></td><td>${renderSelectHtml("supplier", supplierOpts, a.supplier)}</td><td><div class="d-flex gap-1"><button class="btn btn-sm btn-outline-primary edit-act-tab" data-i="${i}"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger del-act-tab" data-i="${i}"><i class="bi bi-trash"></i></button></div></td>`;
       tbodyFinal.appendChild(tr);
     });
   }
 
-  tb.querySelectorAll(".del-act-tab").forEach(b=>{ b.onclick = async ()=>{ const idx = parseInt(b.dataset.i,10); if(!confirm("Delete activity?")) return; const acts = await loadActivitiesFromFirebase(pid); await deleteActivity(pid, acts[idx].id); renderActivityTableInTab(pid); }; });
-  tb.querySelectorAll(".edit-act-tab").forEach(b=>{ b.onclick = async (e)=>{ const btn = e.currentTarget; const idx = parseInt(btn.dataset.i,10); const row = btn.closest("tr"); const inputs = row.querySelectorAll("input, select"); const toggled = btn.classList.toggle("editing"); if(toggled){ inputs.forEach(x=>x.disabled=false); btn.innerHTML='<i class="bi bi-check-lg"></i>'; } else { const arr = Array.from(inputs); let p=0; const obj={}; obj.activity = arr[p++].value; obj.site = arr[p++].value; obj.owner = arr[p++].value; activityDateFields.forEach(k=>{ obj[`plan_${k}`] = arr[p++].value; obj[`actual_${k}`] = arr[p++].value; }); obj.level = arr[p++].value; obj.supplier = arr[p++].value; const acts = await loadActivitiesFromFirebase(pid); const actId = acts[idx].id; await saveSingleActivity(pid, actId, { ...acts[idx], ...obj }); renderActivityTableInTab(pid); } }; });
+  tb.querySelectorAll(".del-act-tab").forEach(b=>{
+    b.onclick = async (e)=>{
+      const row = e.currentTarget.closest("tr");
+      const actId = row.dataset.actid;
+
+      if(!confirm("Delete activity?")) return;
+
+      await deleteActivity(pid, actId);
+      renderActivityTableInTab(pid);
+    };
+  });
+
+  tb.querySelectorAll(".edit-act-tab").forEach(b=>{
+    b.onclick = async (e)=>{
+      const btn = e.currentTarget;
+      const row = btn.closest("tr");
+      const actId = row.dataset.actid;
+
+      const inputs = row.querySelectorAll("input, select");
+      const toggled = btn.classList.toggle("editing");
+
+      if(toggled){
+        inputs.forEach(x=>x.disabled=false);
+        btn.innerHTML='<i class="bi bi-check-lg"></i>';
+      } 
+      else {
+        const arr = Array.from(inputs);
+        let p=0;
+        const obj={};
+
+        obj.activity = arr[p++].value;
+        obj.site = arr[p++].value;
+        obj.owner = arr[p++].value;
+
+        activityDateFields.forEach(k=>{
+          obj[`plan_${k}`] = arr[p++].value;
+          obj[`actual_${k}`] = arr[p++].value;
+        });
+
+        obj.level = arr[p++].value;
+        obj.supplier = arr[p++].value;
+
+        await saveSingleActivity(pid, actId, obj);
+        renderActivityTableInTab(pid);
+      }
+    };
+  });
+
 
   setTimeout(()=>{ const addGlobal = document.getElementById("addActivityGlobal"); if(!addGlobal) return; addGlobal.onclick = async ()=>{ const actId = generateActivityId(); await saveSingleActivity(pid, actId, { activity:"New Task", site:configData.site[0]||"", owner:configData.ee[0]||configData.tpm[0]||"", supplier:configData.supplier[0]||"", level:"" }); renderActivityTableInTab(pid); }; setTimeout(()=>{ showPlaceholderForEmptyDates("#activityTableTab tbody"); setTimeout(()=>{ markDelaysInActivityTable(document); },500); },300); },400);
   setTimeout(()=>{ const exportBtn = document.getElementById("exportActBtn"); if (exportBtn) {exportBtn.onclick = () => exportActivityToExcel(pid);}const importBtn = document.getElementById("importActBtn");const importFile = document.getElementById("importActFile");if (importBtn && importFile) {importBtn.onclick = () => importFile.click();importFile.onchange = (e) => {importActivityFromExcel(pid, e.target.files[0]);};}}, 500);
