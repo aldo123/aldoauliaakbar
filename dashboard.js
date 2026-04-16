@@ -120,7 +120,7 @@ function loadOEETPMModule() {
       });
 }
 
-function traceabilitysn() {
+function KPI() {
     fetch("traceability.html?ver=" + Date.now())
       .then(res => res.text())
       .then(html => {
@@ -492,7 +492,7 @@ const pages = {
   "equipment-downtime": "<div id='RSALoader'></div>",
   "equipment-fpy": "<div id='MESLoader'></div>",
   "defect": "<div id='defectLoader'></div>",
-  "traceability": "<div id='traceabilityLoader'></div>",
+  "KPI": "<div id='KPILoader'></div>",
   "file-list": `<h4>Request List</h4><p>All project documents managed here.</p>`,
   "system-config": `
     <h4>System Configuration</h4>
@@ -530,7 +530,7 @@ function openTab(pageKey, title){
     if (pageKey === "calibration") loadcalibration();
     if (pageKey === "technician-performance") loadtechnician();
     if (pageKey === "project-timeline") loadprojecttime();
-    if (pageKey === "traceability") traceabilitysn();});
+    if (pageKey === "KPI") KPI();});
   tab.querySelector(".close-tab").addEventListener("click", (e) => {
     e.stopPropagation();
 
@@ -570,7 +570,7 @@ function activateTabWithLoader(pageKey) {
   else if (pageKey === "calibration") loadcalibration();
   else if (pageKey === "technician-performance") loadtechnician();
   else if (pageKey === "project-timeline") loadprojecttime();
-  else if (pageKey === "traceability") traceabilitysn();
+  else if (pageKey === "KPI") KPI();
 }
 
 
@@ -617,8 +617,8 @@ document.querySelectorAll(".menu li[data-page]").forEach(item => {
         else if (key === "maintenance-plan") {
             loadPMReport();
         }
-        else if (key === "traceability") {
-            traceabilitysn();
+        else if (key === "KPI") {
+            KPI();
         }
         else if (key === "part-list") {
             loadpartlist();
