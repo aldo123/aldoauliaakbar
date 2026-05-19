@@ -10,6 +10,8 @@ const users = [
   { username: "Doni", password: "105591" },
   { username: "Safik", password: "106110" },
   { username: "Rahmat", password: "106668" },
+  { username: "Nicole", password: "069976" },
+  { username: "Lidya", password: "104678" },
   { username: "Tomi", password: "105578" }
 ];
 
